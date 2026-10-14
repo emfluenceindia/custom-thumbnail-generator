@@ -1,0 +1,154 @@
+MILESTONE 2 - STATUS, OPEN ISSUES AND PLAN TO REACH 100%
+=========================================================
+
+1. ANSWER: IS MILESTONE 2 100% IMPLEMENTED WITH ALL TESTS PASSED?
+-----------------------------------------------------------------
+No, not strictly 100%.
+- All 25 checklist items were run and none failed.
+- The backend works and passed every scenario that was run.
+- A few items do not fully meet what m2.md asks for (see section 2).
+
+
+2. OPEN ISSUES AGAINST THE SPEC
+-------------------------------
+2.1  Item 25 - Plugin Check is not fully clean
+     - No findings in the changed webp files.
+     - Three older findings remain, in files this milestone did not touch:
+       a) readme.txt: "Tested up to: 7.1.2" should only include the major
+          version (7.1).
+       b) templates/ctgen-custom-thumb-list.html.php: variables $sizes,
+          $slug, $size, $crop are not prefixed (PrefixAllGlobals warnings).
+     - Not fixed, so it cannot be called a clean pass.
+
+2.2  Item 22 - existing endpoints "unchanged" is not fully proven
+     - ctgen_get_attachments, ctgen_regenerate_single and
+       ctgen_regenerate_single_slug were re-run and behave sensibly.
+     - There is no git history and no earlier snapshot to compare against.
+     - Only known: includes/class-ajax-handlers.php is untouched.
+     - The slug endpoint's query was limited to one fixture so it would not
+       generate files across the live media library.
+
+2.3  Item 4 - empty library was simulated
+     - A query filter forced zero results; the real library was not emptied.
+
+2.4  Item 16 - "editor cannot produce WebP" was simulated
+     - A stub editor class that refuses image/webp was used.
+     - It was not run on a PHP build that truly lacks WebP support.
+
+2.5  Item 12 - JPEG was not a fresh, independent conversion
+     - The JPEG attachment showed "already current" because item 9 had
+       converted it earlier.
+     - A fresh JPEG conversion is covered by item 9 only.
+
+
+3. OTHER DEVIATIONS AND LIMITATIONS
+-----------------------------------
+3.1  PHPCS was run only on the two webp files, not the whole plugin.
+3.2  The PHPCS ruleset (.phpcs.xml.dist) is at the project root, not inside
+     the plugin as M1 suggested, because Plugin Check rejects hidden files
+     inside a plugin directory.
+3.3  The verification script was disposable and has been deleted; there is
+     no reusable test harness for milestones 3 and 4.
+3.4  PHPCS and WPCS were installed in the Lando container's /tmp (outside
+     the project); they are not persistent.
+
+
+4. WHAT WAS DONE IN MILESTONE 2 (SUMMARY)
+-----------------------------------------
+4.1  webp/class-ctgen-webp-ajax-handlers.php
+     - ID endpoint now returns only JPEG, PNG and GIF attachments (WebP
+       attachments excluded because they cannot be converted).
+     - Thumbnail file name from metadata reduced to its basename.
+     - Attachments with no resolvable file return a structured error.
+4.2  .phpcs.xml.dist created at the project root.
+4.3  Environment: WP-CLI works through Lando (PHP 7.4, Imagick + GD with
+     WebP support). Plugin Check is installed and active.
+
+Results of the 25 items:
+ 1-6   PASS  Auth: bad nonce returns -1; subscriber rejected; nothing
+             leaked or created.
+ 3     PASS  26 eligible IDs; PDF (136) and WebP attachment (195) excluded.
+ 4     PASS  (simulated) empty library returns {"ids":[]} with success.
+ 7-8   PASS  Nonexistent ID, PDF and plain post give structured failures.
+ 9     PASS  Core, theme-style and plugin-style sizes all converted; each
+             WebP re-read from disk (type and dimensions match).
+ 10    PASS  Unregistered slug rejected; no file operation.
+ 11    PASS  Registered slug with no thumbnail is skipped; nothing created.
+ 12    PASS  JPEG, PNG, GIF; PNG alpha preserved (JPEG caveat: see 2.5).
+ 13    PASS  Missing thumbnail skipped; other sizes completed.
+ 14    PASS  Corrupt thumbnail fails (ctgen_webp_source_corrupt); others
+             completed; no WebP left behind.
+ 15    PASS  Repeat calls return "already current"; file count stays at 51.
+ 16    PASS  (simulated) all six sizes fail with
+             ctgen_webp_output_unsupported.
+ 17    PASS  Path-like IDs/slugs rejected; extra path/source/destination
+             params ignored and never echoed.
+ 18    PASS  No server paths in any response.
+ 19    PASS  1 converted, 3 already current, 1 skipped, 1 failed - counts
+             match per-size outcomes.
+ 20    PASS  Meta and source thumbnails unchanged after every scenario; the
+             25 pre-existing attachments untouched.
+ 21    PASS  150x150 original matching thumbnail size caused no converter
+             calls.
+ 22    PASS* Existing endpoints re-run (caveat: see 2.2).
+ 23    PASS  php -l clean on handler, converter and init.php.
+ 24    PASS  PHPCS reports no findings on both webp files (exit 0).
+ 25    PARTIAL  Nothing on webp files; older findings remain (see 2.1).
+
+Milestone 3 was not started.
+
+
+5. PLAN TO REACH 100%
+---------------------
+Step 1 - Plugin Check (item 25)
+  - Change "Tested up to: 7.1.2" to "7.1" in readme.txt.
+  - Prefix or rework $sizes, $slug, $size, $crop in
+    templates/ctgen-custom-thumb-list.html.php (behaviour-neutral rename).
+  - Rerun: lando wp plugin check custom-thumbnail-generator
+  - Target: zero findings across the whole plugin.
+
+Step 2 - PHPCS across the whole plugin
+  - Run over all plugin PHP files (init.php, class-ajax-handlers.php, etc.).
+  - Fix findings in older files with behaviour-neutral changes and re-test
+    the existing endpoints afterwards.
+
+Step 3 - Item 22 proof (do BEFORE touching existing files in steps 1-2)
+  - Copy each existing file that will be edited.
+  - Record outputs of the three existing endpoints on fixtures.
+  - After the edits, diff the files and compare the outputs.
+
+Step 4 - Replace simulated tests where possible
+  - Item 4: run against a throwaway WordPress install / separate database
+    with zero attachments.
+  - Item 16: needs a PHP build without WebP support; otherwise report as
+    simulated.
+  - Item 12: run JPEG, PNG and GIF each as a fresh, independent request.
+
+Step 5 - Reusable test harness
+  - Keep the verification script as a repo file (e.g. tests/m2-verify.php),
+    run with: lando wp eval-file, not shipped with the plugin.
+  - Add a short README with the run command for milestones 3 and 4.
+
+Step 6 - Final report
+  - Rerun php -l, PHPCS, Plugin Check and all 25 items after the fixes.
+  - Report pass/fail per item with exact commands.
+
+
+6. DECISIONS NEEDED FROM THE USER
+---------------------------------
+6.1  May readme.txt, the template file and other older plugin files be
+     edited for the Plugin Check / PHPCS findings, or are they off limits?
+6.2  Is item 16 acceptable as "simulated", or is there a no-WebP PHP
+     environment available?
+6.3  Is a throwaway database / WordPress install acceptable for the
+     empty-library test (instead of emptying the real media library)?
+6.4  Where should the reusable test harness file live?
+
+
+7. CAVEATS THAT REMAIN EVEN AFTER ALL FIXES
+-------------------------------------------
+- Item 16 can only be reported as simulated without a no-WebP PHP build.
+- Item 22 has no git baseline; the before/after snapshot in Step 3 is the
+  best available proof.
+- "100%" therefore means: every item run, every check clean, with these two
+  caveats stated honestly.

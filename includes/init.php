@@ -9,6 +9,7 @@ if( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed early
  if( ! defined( 'CTGEN_PLUGIN_URL' ) ) define( 'CTGEN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
  if( ! defined( 'CTGEN_TEMPLATE_DIR' ) ) define( 'CTGEN_TEMPLATE_DIR', plugin_dir_path( __DIR__ ) . 'templates/' );
  if( ! defined( 'CTGEN_PLUGIN_DIR' ) ) define( 'CTGEN_PLUGIN_DIR', plugin_dir_url( __DIR__ ) );
+ if( ! defined( 'CTGEN_WEBP_DIR' ) ) define( 'CTGEN_WEBP_DIR', plugin_dir_path( __DIR__ ) . 'webp/' );
 
  if( ! defined( 'CTGEN_NATIVE_THUMB_SIZES' ) ) define( 'CTGEN_NATIVE_THUMB_SIZES', [ 'thumbnail', 'medium', 'medium_large', 'large' ] );
 
@@ -31,7 +32,11 @@ if( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed early
 
  require_once CTGEN_PLUGIN_PATH . 'settings-page.php';
  require_once CTGEN_PLUGIN_PATH . 'class-ctgen-functions.php';
- 
+
+ require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-converter.php';
+ require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-ajax-handlers.php';
+ new CTGEN_Webp_Ajax_Handlers();
+
  require_once CTGEN_PLUGIN_PATH . 'class-ajax-handlers.php';
  new CTGEN_Ajax_Handlers();
 

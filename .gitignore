@@ -1,9 +1,0 @@
-# Node modules
-/node_modules/
-
-# Gulp configuration file(s)
-gulpfile.js
-
-# Raw files
-/assets/raw/
-
