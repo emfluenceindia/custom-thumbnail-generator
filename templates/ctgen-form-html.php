@@ -71,7 +71,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<button id="ctgen-regenerate" class="button button-secondary">
 				<i class="fa fa-recycle" aria-hidden="true"></i>&nbsp; <?php esc_html_e( 'Regenerate Thumbnails', 'custom-thumbnail-generator' ); ?> 
 			</button>
-			<p><?php esc_html_e( 'For a specific thumbnail size, hit the corresponding green button ', 'custom-thumbnail-generator' ); ?> ( <i class="fa fa-recycle ctgen-regen-thumbs inline" aria-hidden="true"></i> )  <?php esc_html_e( ' in the table.', 'custom-thumbnail-generator' ); ?> &nbsp;<i class="fa fa-hand-o-right ctgen-arrow-pointer" aria-hidden="true"></i></p>
+			<p><?php esc_html_e( 'For a specific thumbnail size, hit the associated recycle button ', 'custom-thumbnail-generator' ); ?> ( <i class="fa fa-recycle ctgen-regen-thumbs inline" aria-hidden="true"></i> )  <?php esc_html_e( ' in the table.', 'custom-thumbnail-generator' ); ?> &nbsp;<i class="fa fa-hand-o-right ctgen-arrow-pointer" aria-hidden="true"></i></p>
 			<div id="ctgen-progressbar">
 				<div id="ctgen-progress"></div>
 				<div id="ctgen-percentage-increment"></div>
