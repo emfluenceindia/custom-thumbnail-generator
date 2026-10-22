@@ -55,6 +55,7 @@ class CTGEN_Functions {
 						<th class="ctg-text-center"><?php esc_html_e( 'Height', 'custom-thumbnail-generator' ); ?></th>
 						<th class="ctg-text-center"><?php esc_html_e( 'Source', 'custom-thumbnail-generator' ); ?></th>
 						<th class="ctg-text-center"><?php esc_html_e( 'Crop', 'custom-thumbnail-generator' ); ?></th>
+						<th class="ctg-text-center"><?php esc_html_e( 'Action', 'custom-thumbnail-generator' ); ?></th>
 					</tr>
 				</thead>
 				<tbody id="ctg-sizes-list">
@@ -72,6 +73,7 @@ class CTGEN_Functions {
 								<td class="ctg-text-center"><?php echo esc_html( $size['height'] ); ?>px</td>
 								<td class="ctg-text-center"><?php echo wp_kses_post( $this->ctgen_get_size_table_title( $slug ) ); ?></td>
 								<td class="ctg-text-center"><?php echo $size['crop'] ? '<span class="yes">✔</span>' : '<span class="no">✖</span>'; ?></td>
+								<td class="ctg-text-center"><?php self::ctgen_render_webp_convert_button( $slug ); ?></td>
 							</tr>
 							<?php
 						}
@@ -80,6 +82,24 @@ class CTGEN_Functions {
 				</tbody>
 			</table>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Renders the per-size "convert to WebP" button used in both size tables.
+	 *
+	 * Uses its own class (ctgen-webp-convert-size) so it can never trigger the
+	 * existing regenerate (.ctgen-regen-thumbs) or remove (.ctgen-delete-custom-size)
+	 * handlers.
+	 *
+	 * @param string $slug Registered image size slug.
+	 * @return void
+	 */
+	public static function ctgen_render_webp_convert_button( $slug ) {
+		/* translators: %s: image size name, e.g. "thumbnail". */
+		$label = sprintf( __( 'Convert %s thumbnails to WebP', 'custom-thumbnail-generator' ), $slug );
+		?>
+		<button type="button" class="button ctgen-webp-convert-size" data-slug="<?php echo esc_attr( $slug ); ?>" aria-label="<?php echo esc_attr( $label ); ?>" title="<?php echo esc_attr( $label ); ?>"><?php esc_html_e( 'WebP', 'custom-thumbnail-generator' ); ?></button>
 		<?php
 	}
 

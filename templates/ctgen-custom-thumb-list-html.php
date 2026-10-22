@@ -49,6 +49,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								data-slug="<?php echo esc_attr( $ctgen_slug ); ?>" class="button ctgen-delete-custom-size">
 									<i class="fa fa-trash" aria-hidden="true"></i>
 							</button>
+							<?php CTGEN_Functions::ctgen_render_webp_convert_button( $ctgen_slug ); ?>
 						</td>
 					</tr>
 				<?php endforeach; ?>

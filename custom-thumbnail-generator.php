@@ -3,7 +3,7 @@
  * Plugin Name: Custom Thumbnail Generator
  * Plugin URI: https://github.com/emfluenceindia/Custom-Thumbnail-Generator
  * Description: Create theme-independent custom thumbnail sizes with Regenerate feature.
- * Version: 1.0.2
+ * Version: 1.1
  * Author: Subrata Sarkar
  * Author URI: https://profiles.wordpress.org/subrataemfluence
  * Requires PHP: 7.0
@@ -40,7 +40,7 @@ require_once plugin_dir_path( __FILE__ ) . 'includes/init.php';
  */
 function ctgen_add_plugin_settings_links( $links ) {
 	// Build the URL.
-	$settings_url = admin_url( 'options-general.php?page=ctgen-admin-settings' );
+	$settings_url = admin_url( 'admin.php?page=ctgen-admin-settings' );
 
 	// Create the HTML for the link.
 	$settings_link = '<a href="' . esc_url( $settings_url ) . '">' . __( 'Settings', 'custom-thumbnail-generator' ) . '</a>';

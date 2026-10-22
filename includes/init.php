@@ -152,6 +152,82 @@ function ctgen_enqueue_scripts() {
 }
 
 /**
+ * Enqueue the WebP conversion script and styles on the plugin settings page only.
+ */
+add_action( 'admin_enqueue_scripts', 'ctgen_enqueue_webp_scripts' );
+
+/**
+ * Enqueues and localizes the WebP conversion UI assets.
+ *
+ * The readable source is assets/js/ctgen-webp-convert.js; the enqueued
+ * .min.js is generated from it (see v2/tools/build-js.js).
+ *
+ * @param string $hook_suffix The current admin page hook suffix.
+ * @return void
+ */
+function ctgen_enqueue_webp_scripts( $hook_suffix ) {
+	$settings_hook = ctgen_admin_page_hook( 'settings' );
+
+	if ( '' === $settings_hook || $settings_hook !== $hook_suffix ) {
+		return;
+	}
+
+	wp_enqueue_script(
+		'ctgen-webp-convert-script',
+		CTGEN_PLUGIN_DIR . 'assets/js/ctgen-webp-convert.min.js',
+		array( 'jquery' ),
+		CTGEN_PLUGIN_VERSION,
+		true
+	);
+
+	wp_localize_script(
+		'ctgen-webp-convert-script',
+		'CTGENWebpConvert',
+		array(
+			'ajax_url' => admin_url( 'admin-ajax.php' ),
+			'nonce'    => wp_create_nonce( 'ctgen_media_actions' ),
+			'i18n'     => array(
+				'finding'      => __( 'Finding images to convert...', 'custom-thumbnail-generator' ),
+				/* translators: %s: image size name, e.g. "thumbnail". */
+				'findingSize'  => __( 'Finding images to convert for the %s size...', 'custom-thumbnail-generator' ),
+				'busy'         => __( 'Converting...', 'custom-thumbnail-generator' ),
+				'nothing'      => __( 'No JPEG or PNG images found. Nothing to convert.', 'custom-thumbnail-generator' ),
+				/* translators: 1: number of images processed so far, 2: total number of images. */
+				'processing'   => __( 'Processing image %1$s of %2$s...', 'custom-thumbnail-generator' ),
+				/* translators: 1: percentage complete, 2: number of images processed, 3: total number of images. */
+				'announce'     => __( '%1$s%% done: %2$s of %3$s images processed.', 'custom-thumbnail-generator' ),
+				/* translators: 1: converted thumbnails, 2: thumbnails that already had a current WebP copy, 3: skipped thumbnails, 4: failed thumbnails. */
+				'counts'       => __( 'Thumbnails - converted: %1$s, already WebP: %2$s, skipped: %3$s, failed: %4$s.', 'custom-thumbnail-generator' ),
+				/* translators: %s: number of images that could not be processed at all. */
+				'imagesFailed' => __( 'Images that could not be processed: %s.', 'custom-thumbnail-generator' ),
+				/* translators: 1: number of images processed, 2: total number of images. */
+				'doneOk'       => __( 'WebP conversion complete: %1$s of %2$s images processed.', 'custom-thumbnail-generator' ),
+				/* translators: 1: number of images processed, 2: total number of images. */
+				'doneErrors'   => __( 'WebP conversion finished with errors: %1$s of %2$s images processed. See the list below.', 'custom-thumbnail-generator' ),
+				/* translators: 1: number of images processed, 2: total number of images, 3: reason. */
+				'stopped'      => __( 'WebP conversion stopped after %1$s of %2$s images: %3$s', 'custom-thumbnail-generator' ),
+				'auth'         => __( 'Your session has expired or you are not allowed to do this. Reload the page and try again.', 'custom-thumbnail-generator' ),
+				'network'      => __( 'The server could not be reached.', 'custom-thumbnail-generator' ),
+				'malformed'    => __( 'The server sent an unexpected response.', 'custom-thumbnail-generator' ),
+				/* translators: 1: attachment ID, 2: error message. */
+				'itemError'    => __( 'Image ID %1$s: %2$s', 'custom-thumbnail-generator' ),
+				/* translators: 1: attachment ID, 2: image size name, 3: error message. */
+				'sizeError'    => __( 'Image ID %1$s, size %2$s: %3$s', 'custom-thumbnail-generator' ),
+				/* translators: %s: number of further errors not listed. */
+				'more'         => __( '...and %s more.', 'custom-thumbnail-generator' ),
+			),
+		)
+	);
+
+	wp_enqueue_style(
+		'ctgen-webp-convert-css',
+		CTGEN_PLUGIN_DIR . 'assets/css/ctgen-webp-convert.css',
+		array( 'ctg-admin.css' ),
+		CTGEN_PLUGIN_VERSION
+	);
+}
+
+/**
  * Register custom image sizes in WordPress
  */
 add_action( 'init', 'ctgen_register_custom_sizes' );

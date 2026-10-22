@@ -1,10 +1,10 @@
 === Custom Thumbnail Generator ===  
 Contributors: subrataemfluence  
-Tags: thumbnails, media library, regenerate, custom image size, ajax  
+Tags: thumbnails, media library, regenerate, custom image size, webp  
 Requires at least: 6.5  
 Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 1.0.2
+Stable tag: 1.1
 License: GPLv2 or later  
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,11 +22,25 @@ Custom Thumbnail Generator is a powerful tool for defining and managing custom i
 
     * **Consistent Image Handling:** Provides developers, photographers, and content creators with precise control over image dimensions.  
 
+    * **WebP Conversion:** Create WebP copies of existing JPEG and PNG thumbnails, for all sizes at once or for one size at a time, with a live progress bar and a summary of converted, already converted, skipped and failed thumbnails.  
+
+**WebP Conversion**
+
+Go to **Custom Thumbnail Generator > Settings** and use **Convert All Thumbnails to WebP** to convert every thumbnail size, or the **WebP** button in a size's table row to convert only that size. Buttons are available for WordPress core, theme and custom sizes.
+
+    * A WebP file is created next to each existing thumbnail, with the same name and a `.webp` extension (for example `photo-300x200.jpg` gets `photo-300x200.webp`).  
+    * Original images, existing thumbnails and attachment data are never changed or deleted.  
+    * Only existing thumbnails are converted. Missing thumbnails are skipped, not created, and the full-size original image is not converted.  
+    * GIF images are not converted, because animated GIFs would lose their animation.  
+    * Running the conversion again is safe: thumbnails that already have a current WebP copy are reported as "already WebP" and left as they are.  
+    * Images are processed one at a time in the browser, so large media libraries do not time out. Keep the page open until the run finishes.  
+    * The plugin creates the WebP files but does not change which image WordPress displays. Serve them with your theme, a CDN or a server rule that delivers WebP.  
+
 == Installation ==
 
     * Upload the plugin folder to `/wp-content/plugins/`.  
     * Activate the plugin via the **Plugins** menu in WordPress.  
-    * Go to **Settings > Custom Thumbnail Generator** to configure your image sizes.  
+    * Go to **Custom Thumbnail Generator > Settings** in the admin menu to configure your image sizes.  
 
 == Screenshots ==
 
@@ -49,7 +63,32 @@ No. Option to remove any thumbnail size registered by a theme or WordPress core 
 = Is there any restriction on the number of thumbnail sizes that can be created? =  
 No. There is absolutely no restriction on the number of thumbnail sizes. Unlimited number of thumbnail sizes can be registered and made avaialble across all themes.
 
+= Does WebP conversion change or delete my original images? =  
+No. WebP copies are separate files created next to the existing thumbnails. Original images, thumbnails and attachment data stay exactly as they were.
+
+= Why were my GIF images not converted? =  
+GIF images are skipped on purpose. Converting an animated GIF to WebP would lose its animation, so GIFs are not converted.
+
+= What does my server need for WebP conversion? =  
+The image library used by WordPress on your server (Imagick or GD) must support WebP. If it does not, each thumbnail is reported as failed with the message "This server cannot produce WebP output." and no files are created.
+
+= Will my site start showing the WebP images automatically? =  
+No. The plugin creates the WebP files only. To show them to visitors, use your theme, a CDN or a server rule that serves WebP files.
+
+= What do "skipped" and "failed" mean in the conversion summary? =  
+"Skipped" means a thumbnail size has no file to convert, for example because the file is missing. "Failed" means a file exists but could not be converted, for example because it is corrupt; the reason is listed below the progress bar.
+
 == Changelog ==
+
+= 1.1 =  
+* New: Create WebP copies of existing JPEG and PNG thumbnails, for all sizes or for a single size.  
+* New: "Convert All Thumbnails to WebP" button and a WebP button for every size in the default and custom size tables.  
+* New: Live progress bar with converted, already converted, skipped and failed counts, and a list of failures.  
+* GIF images are excluded from WebP conversion so that animated GIFs never lose their animation.  
+* Original images, thumbnails and attachment data are never modified by the conversion.  
+* Code updated to the WordPress Coding Standards.  
+* Translation template updated with the new strings.  
+* The plugin now has its own admin menu: **Custom Thumbnail Generator > Settings** (previously **Settings > Custom Thumbnail Generator**).  
 
 = 1.0.2 =  
 * WordPress version compatibility  
@@ -62,6 +101,11 @@ No. There is absolutely no restriction on the number of thumbnail sizes. Unlimit
 * Initial release  
 * AJAX table loader and thumbnail manager  
 * Nonce validation and security best practices  
+
+== Upgrade Notice ==
+
+= 1.1 =  
+Adds WebP conversion for existing JPEG and PNG thumbnails. Original images and thumbnails are not changed.
 
 == License ==
 
