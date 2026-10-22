@@ -2,7 +2,7 @@
 Contributors: subrataemfluence  
 Tags: thumbnails, media library, regenerate, custom image size, ajax  
 Requires at least: 6.5  
-Tested up to: 7.1.2
+Tested up to: 7.1
 Requires PHP: 7.0
 Stable tag: 1.0.2
 License: GPLv2 or later  

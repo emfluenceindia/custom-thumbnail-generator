@@ -42,7 +42,7 @@ class CTGEN_Webp_Ajax_Handlers {
 	/**
 	 * AJAX entry point: returns the IDs of image attachments eligible for
 	 * WebP conversion. Unlike the existing ctgen_get_attachments handler,
-	 * this is explicitly filtered to images only.
+	 * this is explicitly filtered to JPEG and PNG images only (GIF is excluded).
 	 *
 	 * @return void
 	 */
@@ -93,7 +93,7 @@ class CTGEN_Webp_Ajax_Handlers {
 	}
 
 	/**
-	 * Returns the IDs of every image attachment currently in the media
+	 * Returns the IDs of every JPEG and PNG attachment currently in the media
 	 * library. Public (not just an AJAX callback) so it can be unit tested
 	 * directly and reused by the future UI milestone without going through
 	 * an HTTP round-trip.
@@ -143,6 +143,22 @@ class CTGEN_Webp_Ajax_Handlers {
 			return new WP_Error(
 				'ctgen_webp_not_an_image',
 				__( 'The specified item is not an image attachment.', 'custom-thumbnail-generator' )
+			);
+		}
+
+		$attachment_mime = get_post_mime_type( $attachment_id );
+
+		if ( CTGEN_Webp_Converter::EXCLUDED_GIF_MIME_TYPE === $attachment_mime ) {
+			return new WP_Error(
+				'ctgen_webp_gif_excluded',
+				$this->safe_error_message( 'ctgen_webp_gif_excluded' )
+			);
+		}
+
+		if ( ! in_array( $attachment_mime, CTGEN_Webp_Converter::ALLOWED_SOURCE_MIME_TYPES, true ) ) {
+			return new WP_Error(
+				'ctgen_webp_unsupported_attachment_type',
+				__( 'Only JPEG and PNG images can be converted to WebP.', 'custom-thumbnail-generator' )
 			);
 		}
 
@@ -350,16 +366,16 @@ class CTGEN_Webp_Ajax_Handlers {
 	 */
 	private function safe_error_message( $error_code ) {
 		$messages = array(
-			'ctgen_webp_source_not_found'         => __( 'The source thumbnail file could not be found.', 'custom-thumbnail-generator' ),
-			'ctgen_webp_source_unreadable'        => __( 'The source thumbnail file could not be read.', 'custom-thumbnail-generator' ),
-			'ctgen_webp_source_corrupt'           => __( 'The source thumbnail file appears to be corrupt.', 'custom-thumbnail-generator' ),
-			'ctgen_webp_unsupported_source_type'  => __( 'This thumbnail is not in a supported format.', 'custom-thumbnail-generator' ),
-			'ctgen_webp_animated_gif_unsupported' => __( 'This is an animated GIF, and animation cannot be preserved when converting it, so it was skipped.', 'custom-thumbnail-generator' ),
-			'ctgen_webp_invalid_destination'      => __( 'The WebP file could not be written to its destination.', 'custom-thumbnail-generator' ),
-			'ctgen_webp_editor_unavailable'       => __( 'No image editor is available to process this thumbnail.', 'custom-thumbnail-generator' ),
-			'ctgen_webp_output_unsupported'       => __( 'This server cannot produce WebP output.', 'custom-thumbnail-generator' ),
-			'ctgen_webp_save_failed'              => __( 'The WebP file could not be saved.', 'custom-thumbnail-generator' ),
-			'ctgen_webp_output_invalid'           => __( 'The conversion did not produce a valid WebP file.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_source_not_found'        => __( 'The source thumbnail file could not be found.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_source_unreadable'       => __( 'The source thumbnail file could not be read.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_source_corrupt'          => __( 'The source thumbnail file appears to be corrupt.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_unsupported_source_type' => __( 'This thumbnail is not in a supported format.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_gif_excluded'            => __( 'GIF images are not converted to WebP. Animated GIFs would lose their animation, so all GIF files are skipped.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_invalid_destination'     => __( 'The WebP file could not be written to its destination.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_editor_unavailable'      => __( 'No image editor is available to process this thumbnail.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_output_unsupported'      => __( 'This server cannot produce WebP output.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_save_failed'             => __( 'The WebP file could not be saved.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_output_invalid'          => __( 'The conversion did not produce a valid WebP file.', 'custom-thumbnail-generator' ),
 		);
 
 		return isset( $messages[ $error_code ] )

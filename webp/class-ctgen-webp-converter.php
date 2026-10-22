@@ -2,7 +2,7 @@
 /**
  * Reusable, standalone WebP conversion service.
  *
- * Converts one explicitly supplied JPEG/PNG/GIF file to a separately named
+ * Converts one explicitly supplied JPEG/PNG file to a separately named
  * WebP file using WordPress's own image-editor APIs. This class knows
  * nothing about attachments, bulk loops, AJAX, or UI state; callers decide
  * *which* file to convert and *where* the result should go.
@@ -24,10 +24,20 @@ class CTGEN_Webp_Converter {
 	 *
 	 * Membership is decided from the file's real, content-sniffed MIME
 	 * type (via wp_getimagesize()), never from its filename extension.
+	 * GIF is deliberately excluded (see EXCLUDED_GIF_MIME_TYPE).
 	 *
 	 * @var string[]
 	 */
-	const ALLOWED_SOURCE_MIME_TYPES = array( 'image/jpeg', 'image/png', 'image/gif' );
+	const ALLOWED_SOURCE_MIME_TYPES = array( 'image/jpeg', 'image/png' );
+
+	/**
+	 * GIF files are never converted: an animated GIF would lose its
+	 * animation, so every GIF (static or animated) is rejected with its own
+	 * error code rather than the generic unsupported-type error.
+	 *
+	 * @var string
+	 */
+	const EXCLUDED_GIF_MIME_TYPE = 'image/gif';
 
 	/**
 	 * The WebP MIME type this service always produces.
@@ -45,7 +55,7 @@ class CTGEN_Webp_Converter {
 	 * temporary file, so retries are stable (no growing duplicate filenames)
 	 * and a failed attempt never destroys a previously valid destination.
 	 *
-	 * @param string $source_path      Absolute path to an existing JPEG, PNG, or GIF file.
+	 * @param string $source_path      Absolute path to an existing JPEG or PNG file.
 	 * @param string $destination_path Absolute path (ending in .webp) to write the result to.
 	 * @return array|WP_Error {
 	 *     Array on success, WP_Error on failure.
@@ -68,14 +78,6 @@ class CTGEN_Webp_Converter {
 
 		if ( is_wp_error( $validated_destination ) ) {
 			return $validated_destination;
-		}
-
-		if ( $this->is_animated_gif( $source_path ) ) {
-			return new WP_Error(
-				'ctgen_webp_animated_gif_unsupported',
-				__( 'This GIF is animated. The active WordPress image editor selects only the first frame when loading a file, so converting it would silently discard the animation. This file was skipped instead of producing a flattened, misleading result.', 'custom-thumbnail-generator' ),
-				array( 'source' => $source_path )
-			);
 		}
 
 		$editor = wp_get_image_editor( $source_path );
@@ -153,11 +155,19 @@ class CTGEN_Webp_Converter {
 			);
 		}
 
+		if ( self::EXCLUDED_GIF_MIME_TYPE === $image_info['mime'] ) {
+			return new WP_Error(
+				'ctgen_webp_gif_excluded',
+				__( 'GIF images are not converted to WebP. Animated GIFs would lose their animation, so all GIF files are skipped.', 'custom-thumbnail-generator' ),
+				array( 'source' => $source_path )
+			);
+		}
+
 		if ( ! in_array( $image_info['mime'], self::ALLOWED_SOURCE_MIME_TYPES, true ) ) {
 			return new WP_Error(
 				'ctgen_webp_unsupported_source_type',
 				/* translators: %s: the detected MIME type of the rejected file. */
-				sprintf( __( 'Unsupported source type "%s". Only JPEG, PNG, and GIF are supported.', 'custom-thumbnail-generator' ), $image_info['mime'] ),
+				sprintf( __( 'Unsupported source type "%s". Only JPEG and PNG are supported.', 'custom-thumbnail-generator' ), $image_info['mime'] ),
 				array(
 					'source' => $source_path,
 					'mime'   => $image_info['mime'],
@@ -336,81 +346,5 @@ class CTGEN_Webp_Converter {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Deleting our own temp file, guarded by file_exists() above; wp_delete_file() is intended for attachment-tracked files, not scratch temp files.
 			unlink( $temp_path );
 		}
-	}
-
-	/**
-	 * Determines whether a GIF file contains more than one frame.
-	 *
-	 * Uses Imagick's own frame count when the Imagick PHP extension is
-	 * available, since that is exact. Falls back to a byte-level scan for
-	 * the well-known Graphic Control Extension + Image Descriptor pattern
-	 * when Imagick is not loaded; this heuristic is a fallback, not the
-	 * primary method, precisely because it is not exact.
-	 *
-	 * @param string $source_path Absolute path to a file already confirmed to be a GIF.
-	 * @return bool
-	 */
-	private function is_animated_gif( $source_path ) {
-		$image_info = wp_getimagesize( $source_path );
-
-		if ( false === $image_info || 'image/gif' !== $image_info['mime'] ) {
-			return false;
-		}
-
-		if ( class_exists( 'Imagick' ) ) {
-			try {
-				$imagick = new Imagick( $source_path );
-				$frames  = $imagick->getNumberImages();
-				$imagick->clear();
-
-				return $frames > 1;
-			} catch ( Exception $e ) {
-				return false;
-			}
-		}
-
-		return $this->scan_gif_bytes_for_multiple_frames( $source_path );
-	}
-
-	/**
-	 * Fallback, non-exact GIF frame detector for environments without the
-	 * Imagick PHP extension.
-	 *
-	 * @param string $source_path Absolute path to a file already confirmed to be a GIF.
-	 * @return bool
-	 */
-	private function scan_gif_bytes_for_multiple_frames( $source_path ) {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		$raw = file_get_contents( $source_path );
-
-		if ( false === $raw ) {
-			return false;
-		}
-
-		$offset = 0;
-		$frames = 0;
-
-		while ( $frames < 2 ) {
-			$control_extension = strpos( $raw, "\x00\x21\xF9\x04", $offset );
-
-			if ( false === $control_extension ) {
-				break;
-			}
-
-			$offset           = $control_extension + 1;
-			$image_descriptor = strpos( $raw, "\x00\x2C", $offset );
-
-			if ( false === $image_descriptor ) {
-				break;
-			}
-
-			if ( $control_extension + 8 === $image_descriptor ) {
-				++$frames;
-			}
-
-			$offset = $image_descriptor + 1;
-		}
-
-		return $frames > 1;
 	}
 }

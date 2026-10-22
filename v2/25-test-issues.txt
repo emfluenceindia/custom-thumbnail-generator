@@ -1,154 +1,136 @@
-MILESTONE 2 - STATUS, OPEN ISSUES AND PLAN TO REACH 100%
-=========================================================
+MILESTONE 2 - STATUS (updated 2026-10-22)
+==========================================
+Previous version of this file: v2/25-test-issues.txt.bak
+
 
 1. ANSWER: IS MILESTONE 2 100% IMPLEMENTED WITH ALL TESTS PASSED?
 -----------------------------------------------------------------
-No, not strictly 100%.
-- All 25 checklist items were run and none failed.
-- The backend works and passed every scenario that was run.
-- A few items do not fully meet what m2.md asks for (see section 2).
+Yes, with one stated caveat:
+- All 25 items were re-run in this session and pass.
+- Item 16 is SIMULATED (accepted by the user): this server's Imagick and GD
+  both support WebP, so "no WebP support" is produced with a stub editor.
+- GIF is now excluded from conversion (user decision, see
+  v2/m1-test-report.txt). Items 3 and 12 were re-run with that rule.
+- Milestone 3 has not been started.
 
 
-2. OPEN ISSUES AGAINST THE SPEC
--------------------------------
-2.1  Item 25 - Plugin Check is not fully clean
-     - No findings in the changed webp files.
-     - Three older findings remain, in files this milestone did not touch:
-       a) readme.txt: "Tested up to: 7.1.2" should only include the major
-          version (7.1).
-       b) templates/ctgen-custom-thumb-list.html.php: variables $sizes,
-          $slug, $size, $crop are not prefixed (PrefixAllGlobals warnings).
-     - Not fixed, so it cannot be called a clean pass.
-
-2.2  Item 22 - existing endpoints "unchanged" is not fully proven
-     - ctgen_get_attachments, ctgen_regenerate_single and
-       ctgen_regenerate_single_slug were re-run and behave sensibly.
-     - There is no git history and no earlier snapshot to compare against.
-     - Only known: includes/class-ajax-handlers.php is untouched.
-     - The slug endpoint's query was limited to one fixture so it would not
-       generate files across the live media library.
-
-2.3  Item 4 - empty library was simulated
-     - A query filter forced zero results; the real library was not emptied.
-
-2.4  Item 16 - "editor cannot produce WebP" was simulated
-     - A stub editor class that refuses image/webp was used.
-     - It was not run on a PHP build that truly lacks WebP support.
-
-2.5  Item 12 - JPEG was not a fresh, independent conversion
-     - The JPEG attachment showed "already current" because item 9 had
-       converted it earlier.
-     - A fresh JPEG conversion is covered by item 9 only.
+2. ISSUES FROM THE PREVIOUS REPORT - RESOLUTION
+-----------------------------------------------
+2.1  Item 25 Plugin Check            RESOLVED
+     - readme.txt "Tested up to: 7.1.2" -> "7.1".
+     - Template variables prefixed ($ctgen_sizes, $ctgen_slug, $ctgen_size,
+       $ctgen_crop).
+2.2  Item 22 existing endpoints      RESOLVED
+     - The plugin IS a git repository (earlier report was wrong). Git shows
+       that since v1.0.2 (8e27a54) the only content change to older files was
+       the WebP loader lines in includes/init.php.
+     - Behaviour snapshot of all legacy endpoints taken on the exact HEAD code
+       and again after the PHPCS edits (see 3.3).
+2.3  Item 4 empty library            RESOLVED (real, not simulated)
+     - Attachment rows deleted (files untouched), test run, DB re-imported.
+       CHECKSUM TABLE wp_posts/wp_postmeta identical before and after.
+2.4  Item 16 no-WebP editor          ACCEPTED AS SIMULATED (user decision)
+2.5  Item 12 fresh JPEG              RESOLVED - JPEG, PNG and GIF each converted
+     in a separate request on a fresh fixture (no WebP existed beforehand).
+3.1  PHPCS only on webp files        RESOLVED - whole plugin, 0 findings.
+3.3  No reusable harness             RESOLVED - v2/tests/m2-verify.php + README.md.
+3.4  PHPCS in container /tmp         OPEN (not a blocker) - lost on lando rebuild.
 
 
-3. OTHER DEVIATIONS AND LIMITATIONS
------------------------------------
-3.1  PHPCS was run only on the two webp files, not the whole plugin.
-3.2  The PHPCS ruleset (.phpcs.xml.dist) is at the project root, not inside
-     the plugin as M1 suggested, because Plugin Check rejects hidden files
-     inside a plugin directory.
-3.3  The verification script was disposable and has been deleted; there is
-     no reusable test harness for milestones 3 and 4.
-3.4  PHPCS and WPCS were installed in the Lando container's /tmp (outside
-     the project); they are not persistent.
+3. CHANGES MADE
+---------------
+3.1  Backups (.bak, same directory, byte-identical to git HEAD):
+     custom-thumbnail-generator.php, readme.txt, includes/init.php,
+     includes/class-ajax-handlers.php, includes/class-ctgen-functions.php,
+     includes/settings-page.php, templates/ctgen-form.html.php,
+     templates/ctgen-custom-thumb-list.html.php
+3.2  PHPCS fixes (929 findings -> 0):
+     - 890 auto-fixed by phpcbf (indentation, spacing, Yoda, array syntax).
+     - Docblocks, comment punctuation, explicit "public" on 6 methods
+       (methods were already public by default).
+     - Removed 2 lines of commented-out code (after wp_send_json_success(),
+       which exits, so they could never run).
+     - in_array( ..., true ) in ctgen_get_size_table_title(): verified on
+       PHP 7.4 that only a size slug of exactly "0" changes (it was wrongly
+       labelled "WordPress Core"); every real slug is unaffected.
+     - Renamed (WPCS file-name rules), references updated:
+         includes/class-ajax-handlers.php -> includes/class-ctgen-ajax-handlers.php
+         templates/ctgen-form.html.php -> templates/ctgen-form-html.php
+         templates/ctgen-custom-thumb-list.html.php -> templates/ctgen-custom-thumb-list-html.php
+3.3  Item 22 behaviour comparison (legacy-before.json vs legacy-after.json):
+     - Identical: auth (bad nonce / subscriber) on all 6 legacy actions,
+       ctgen_get_attachments, ctgen_regenerate_single (+ resulting metadata),
+       ctgen_regenerate_single_slug (+ metadata, unknown slug, no images),
+       add/remove custom size, plugin action link, media dropdown, enqueue
+       data.
+     - Different ONLY in whitespace: settings page HTML and the
+       ctgen_reload_thumb_list HTML (phpcbf turned the template indentation
+       from spaces into tabs). Same non-whitespace characters (5289/5289 and
+       1622/1622). JS inserts the list with .html(); admin CSS has no
+       white-space rules, so the rendered page is the same.
+3.4  New files (not shipped):
+     - v2/tests/m2-verify.php, v2/tests/README.md, v2/tests/results/*
+     - .distignore (release exclusion list) and v2/deploy/svn-release.sh
+       (builds the release file manifest, refreshes SVN trunk/, optionally
+       creates tags/<version>; never runs svn add/commit).
+     - .gitignore (user will trim it).
 
 
-4. WHAT WAS DONE IN MILESTONE 2 (SUMMARY)
------------------------------------------
-4.1  webp/class-ctgen-webp-ajax-handlers.php
-     - ID endpoint now returns only JPEG, PNG and GIF attachments (WebP
-       attachments excluded because they cannot be converted).
-     - Thumbnail file name from metadata reduced to its basename.
-     - Attachments with no resolvable file return a structured error.
-4.2  .phpcs.xml.dist created at the project root.
-4.3  Environment: WP-CLI works through Lando (PHP 7.4, Imagick + GD with
-     WebP support). Plugin Check is installed and active.
+4. RESULTS OF THE 25 ITEMS (this session, final code)
+-----------------------------------------------------
+ 1   PASS  Bad/missing nonce -> -1, empty body.
+ 2   PASS  Subscriber -> "You are not authorized...", empty body.
+ 3   PASS  ID list equals independent jpeg/png query; PDFs, WebP and GIF
+           attachments excluded.
+ 4   PASS  Real empty library -> {"success":true,"data":{"ids":[]}}.
+ 5   PASS  Bad/missing nonce rejected; no WebP files created.
+ 6   PASS  Subscriber rejected; no WebP files created.
+ 7   PASS  ID 99999999 -> ctgen_webp_not_an_image; ID 0 ->
+           ctgen_webp_invalid_attachment.
+ 8   PASS  PDF and plain post -> ctgen_webp_not_an_image.
+ 9   PASS  Core (thumbnail), theme-style (projectx_test_card) and plugin
+           (ctgen_250x250) sizes each converted; WebP re-read from disk.
+ 10  PASS  Unregistered slug -> ctgen_webp_unknown_size; no file change.
+ 11  PASS  Registered slug without a file -> skipped (no_file_for_size).
+ 12  PASS  JPEG and PNG fresh and separate; PNG alpha kept (127/127).
+           GIF attachment -> ctgen_webp_gif_excluded, no WebP written.
+ 13  PASS  Missing thumbnail skipped (source_missing); 4 others converted.
+ 14  PASS  Corrupt thumbnail failed (ctgen_webp_source_corrupt); others
+           converted; no WebP/temp file left.
+ 15  PASS  Repeat -> already_current x5; file count 75 -> 75.
+ 16  PASS  SIMULATED: 5/5 sizes ctgen_webp_output_unsupported; nothing
+           written.
+ 17  PASS  Paths as ID/slug rejected; extra path params ignored; nothing
+           echoed or created.
+ 18  PASS  29 responses scanned; no server paths; file fields are basenames.
+ 19  PASS  Counts {2,1,1,1} equal per-size tally; sum 5 = 5 sizes.
+ 20  PASS  Originals, thumbnails and post meta of 10 fixtures unchanged.
+ 21  PASS  150x150 original never sent to converter; original path never
+           among converter calls.
+ 22  PASS  See 3.3. Re-checked after the GIF change: the only other
+           difference is the new GIF notice on the settings page.
+ 23  PASS  php -l clean on all 9 plugin PHP files + harness.
+ 24  PASS  phpcs --standard=.phpcs.xml.dist -> 0 findings (whole plugin).
+ 25  PASS  Plugin Check on the release build (27 files built with
+           v2/deploy/svn-release.sh) -> "No errors found".
+           CORRECTION: an earlier version of this line said only .gitignore
+           was reported on the working copy. The full output also lists
+           .distignore (hidden_files warning) and v2/deploy/svn-release.sh
+           (application_detected error). All are dev-only and excluded from
+           the release by .distignore.
 
-Results of the 25 items:
- 1-6   PASS  Auth: bad nonce returns -1; subscriber rejected; nothing
-             leaked or created.
- 3     PASS  26 eligible IDs; PDF (136) and WebP attachment (195) excluded.
- 4     PASS  (simulated) empty library returns {"ids":[]} with success.
- 7-8   PASS  Nonexistent ID, PDF and plain post give structured failures.
- 9     PASS  Core, theme-style and plugin-style sizes all converted; each
-             WebP re-read from disk (type and dimensions match).
- 10    PASS  Unregistered slug rejected; no file operation.
- 11    PASS  Registered slug with no thumbnail is skipped; nothing created.
- 12    PASS  JPEG, PNG, GIF; PNG alpha preserved (JPEG caveat: see 2.5).
- 13    PASS  Missing thumbnail skipped; other sizes completed.
- 14    PASS  Corrupt thumbnail fails (ctgen_webp_source_corrupt); others
-             completed; no WebP left behind.
- 15    PASS  Repeat calls return "already current"; file count stays at 51.
- 16    PASS  (simulated) all six sizes fail with
-             ctgen_webp_output_unsupported.
- 17    PASS  Path-like IDs/slugs rejected; extra path/source/destination
-             params ignored and never echoed.
- 18    PASS  No server paths in any response.
- 19    PASS  1 converted, 3 already current, 1 skipped, 1 failed - counts
-             match per-size outcomes.
- 20    PASS  Meta and source thumbnails unchanged after every scenario; the
-             25 pre-existing attachments untouched.
- 21    PASS  150x150 original matching thumbnail size caused no converter
-             calls.
- 22    PASS* Existing endpoints re-run (caveat: see 2.2).
- 23    PASS  php -l clean on handler, converter and init.php.
- 24    PASS  PHPCS reports no findings on both webp files (exit 0).
- 25    PARTIAL  Nothing on webp files; older findings remain (see 2.1).
-
-Milestone 3 was not started.
-
-
-5. PLAN TO REACH 100%
----------------------
-Step 1 - Plugin Check (item 25)
-  - Change "Tested up to: 7.1.2" to "7.1" in readme.txt.
-  - Prefix or rework $sizes, $slug, $size, $crop in
-    templates/ctgen-custom-thumb-list.html.php (behaviour-neutral rename).
-  - Rerun: lando wp plugin check custom-thumbnail-generator
-  - Target: zero findings across the whole plugin.
-
-Step 2 - PHPCS across the whole plugin
-  - Run over all plugin PHP files (init.php, class-ajax-handlers.php, etc.).
-  - Fix findings in older files with behaviour-neutral changes and re-test
-    the existing endpoints afterwards.
-
-Step 3 - Item 22 proof (do BEFORE touching existing files in steps 1-2)
-  - Copy each existing file that will be edited.
-  - Record outputs of the three existing endpoints on fixtures.
-  - After the edits, diff the files and compare the outputs.
-
-Step 4 - Replace simulated tests where possible
-  - Item 4: run against a throwaway WordPress install / separate database
-    with zero attachments.
-  - Item 16: needs a PHP build without WebP support; otherwise report as
-    simulated.
-  - Item 12: run JPEG, PNG and GIF each as a fresh, independent request.
-
-Step 5 - Reusable test harness
-  - Keep the verification script as a repo file (e.g. tests/m2-verify.php),
-    run with: lando wp eval-file, not shipped with the plugin.
-  - Add a short README with the run command for milestones 3 and 4.
-
-Step 6 - Final report
-  - Rerun php -l, PHPCS, Plugin Check and all 25 items after the fixes.
-  - Report pass/fail per item with exact commands.
+Every full run ended with: uploads 116 files (md5 identical),
+25 real attachments, real attachment meta unchanged, option unchanged.
 
 
-6. DECISIONS NEEDED FROM THE USER
----------------------------------
-6.1  May readme.txt, the template file and other older plugin files be
-     edited for the Plugin Check / PHPCS findings, or are they off limits?
-6.2  Is item 16 acceptable as "simulated", or is there a no-WebP PHP
-     environment available?
-6.3  Is a throwaway database / WordPress install acceptable for the
-     empty-library test (instead of emptying the real media library)?
-6.4  Where should the reusable test harness file live?
-
-
-7. CAVEATS THAT REMAIN EVEN AFTER ALL FIXES
--------------------------------------------
-- Item 16 can only be reported as simulated without a no-WebP PHP build.
-- Item 22 has no git baseline; the before/after snapshot in Step 3 is the
-  best available proof.
-- "100%" therefore means: every item run, every check clean, with these two
-  caveats stated honestly.
+5. OPEN, NON-BLOCKING ITEMS
+---------------------------
+- languages/custom-thumbnail-generator.pot: source references point to the
+  old file names and line numbers, and the WebP strings are missing.
+  Comment-only; regenerate in M4 (wp i18n make-pot).
+- PHPCS/WPCS installed in the container's /tmp (lost on lando rebuild).
+- Commit 0aaa803 deleted .gitignore, README.md, package.json and
+  package-lock.json from git - confirm that was intended.
+- v2/bulk-convert/m1-m4.md still say "no git repository" and refer to the
+  old file name includes/class-ajax-handlers.php.
+- Nothing has been committed to git.

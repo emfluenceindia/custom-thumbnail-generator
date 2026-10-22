@@ -1,0 +1,92 @@
+MILESTONE 1 - CONVERTER SERVICE - VERIFICATION REPORT (2026-10-22)
+====================================================================
+
+1. VERDICT
+----------
+Complete. All 23 items pass on the final code.
+- Harness: v2/tests/m1-verify.php (20 items) + shell checks (items 21-23).
+- Last run output: v2/tests/results/run-m1.txt
+- No earlier M1 report existed; every item was run in this session.
+
+
+2. USER DECISION APPLIED: GIF EXCLUDED
+--------------------------------------
+- webp/class-ctgen-webp-converter.php: ALLOWED_SOURCE_MIME_TYPES is now
+  JPEG + PNG. Any GIF (static or animated) is rejected before an editor
+  loads it, with its own code: ctgen_webp_gif_excluded.
+- The animated-GIF detection code (Imagick frame count + byte scan) was
+  removed as dead code.
+- webp/class-ctgen-webp-ajax-handlers.php: GIF attachments are no longer
+  returned as eligible; the convert endpoint refuses a GIF attachment as a
+  whole (ctgen_webp_gif_excluded) and any other non-JPEG/PNG image
+  (ctgen_webp_unsupported_attachment_type).
+- templates/ctgen-form-html.php: info notice on the settings page, below the
+  regeneration controls:
+  "WebP conversion: Animated GIFs are not convertible to WebP without losing
+   their animation, so GIF images are not converted. JPEG and PNG thumbnails
+   are converted."
+- Backups: webp/class-ctgen-webp-converter.php.bak,
+  webp/class-ctgen-webp-ajax-handlers.php.bak (both = git HEAD).
+
+
+3. RESULTS
+----------
+ 1  PASS  JPEG (.jpg) -> valid WebP, read back 640x480 image/webp; return
+          values match.
+ 2  PASS  .jpeg extension converts identically.
+ 3  PASS  Real JPEG named .png: content-sniffed as image/jpeg, converts.
+ 4  PASS  PNG alpha kept: corner alpha 127 (transparent), centre 0.
+ 5  PASS  Static GIF -> ctgen_webp_gif_excluded, no output (user decision).
+ 6  PASS  3-frame animated GIF -> ctgen_webp_gif_excluded, no output (user
+          decision: animation preservation is not offered).
+ 7  PASS  No flattened single-frame WebP, no temp file.
+ 8  PASS  BMP and TIFF -> ctgen_webp_unsupported_source_type, no output.
+ 9  PASS  Garbage .jpg -> ctgen_webp_source_corrupt, no output. A truncated
+          JPEG (header intact) is decoded leniently by Imagick and produces
+          a complete, valid WebP - never a partial file.
+ 10 PASS  Missing / empty path -> ctgen_webp_source_not_found, no warnings.
+ 11 PASS  REAL chmod 000 file (PHP runs as www-data) ->
+          ctgen_webp_source_unreadable.
+ 12 PASS  SIMULATED editor without WebP -> ctgen_webp_output_unsupported
+          (checked via $editor->supports_mime_type()); no editors ->
+          ctgen_webp_editor_unavailable. Real env: WP_Image_Editor_Imagick,
+          WebP supported.
+ 13 PASS  Destination = source, via "sub/..", via a symlinked folder, or a
+          non-.webp name -> ctgen_webp_invalid_destination. Destination =
+          symlink pointing at the source: the atomic rename replaces the
+          link itself; the source stays byte-identical.
+ 14 PASS  First conversion writes exactly the requested path.
+ 15 PASS  3 repeats: same file name each time (stable overwrite via atomic
+          rename), no new files, unrelated file untouched, no temp files.
+ 16 PASS  REAL read-only folder (0555) -> ctgen_webp_invalid_destination;
+          SIMULATED save() error -> ctgen_webp_save_failed; no output.
+ 17 PASS  Existing valid WebP survives a SIMULATED save error and a
+          SIMULATED corrupt write (ctgen_webp_output_invalid); corrupt temp
+          file removed.
+ 18 PASS  md5 + size + mtime of all 12 source fixtures unchanged.
+ 19 PASS  Converting a real attachment's files changes no post meta, URL,
+          wp_get_attachment_image(), image_src or MIME type.
+ 20 PASS  Success: path, file, width, height, mime-type. Failures: WP_Error
+          with 10 distinct codes for 10 categories.
+ 21 PASS  php -l clean on all 9 plugin PHP files and both harnesses.
+ 22 PASS  phpcs --standard=.phpcs.xml.dist (whole plugin) -> 0 findings.
+ 23 PASS  Plugin Check on the release build (27 files, built with
+          v2/deploy/svn-release.sh): "No errors found".
+          On the git working copy it also reports the dev-only files
+          .gitignore, .distignore (hidden_files warning) and
+          v2/deploy/svn-release.sh (application_detected error); all three
+          are excluded from the release by .distignore.
+
+
+4. NOTES
+--------
+- Simulated: items 12, 16 (second half) and 17 use stub image editors,
+  because this server supports WebP and PHP cannot be made to fail a write
+  on demand. Items 11 and 16 (first half) use real file permissions.
+- WordPress core prints "getimagesize()/exif_imagetype(): Read error!"
+  warnings when item 17's simulated corrupt output is checked, because
+  WP_DEBUG is true in wp-config.php (wp_getimagesize() only silences them
+  when WP_DEBUG is off). They do not come from the converter.
+- Every run removes its folder and temporary attachment; wp-content/uploads
+  was compared file-by-file with the backup taken before this work:
+  identical.

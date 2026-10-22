@@ -1,0 +1,59 @@
+# Files and folders excluded from the WordPress.org SVN release (trunk/ and tags/).
+# Read by v2/deploy/build-release.sh (rsync --exclude-from), and also understood by
+# `wp dist-archive` and the 10up "WordPress Plugin Deploy" GitHub Action.
+# One pattern per line; comments must be on their own line.
+# A leading "/" anchors the pattern to the plugin root.
+
+# Version control and dev-only dot files
+/.git
+/.gitignore
+/.gitattributes
+/.distignore
+/.svn
+
+# Development docs, prompts, test harnesses and deploy scripts
+/v2
+/tests
+/test
+
+# Backups made before editing existing files
+*.bak
+
+# Dependency and build tooling
+/node_modules
+/vendor
+/composer.json
+/composer.lock
+/package.json
+/package-lock.json
+/gulpfile.js
+/assets/raw
+
+# GitHub-only readme (WordPress.org uses readme.txt)
+/README.md
+
+# Lint / static analysis configuration and caches
+.phpcs.xml
+.phpcs.xml.dist
+phpcs.xml
+phpcs.xml.dist
+phpunit.xml
+phpunit.xml.dist
+.phpunit.result.cache
+
+# Logs, exports and archives
+*.log
+*.sql
+*.zip
+*.tgz
+*.tar.gz
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+*:Zone.Identifier
+.idea
+.vscode
+*.swp
+*~
