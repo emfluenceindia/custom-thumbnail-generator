@@ -22,15 +22,17 @@ Custom Thumbnail Generator is a powerful tool for defining and managing custom i
 
     * **Consistent Image Handling:** Provides developers, photographers, and content creators with precise control over image dimensions.  
 
-    * **WebP Conversion:** Create WebP copies of existing JPEG and PNG thumbnails, for all sizes at once or for one size at a time, with a live progress bar and a summary of converted, already converted, skipped and failed thumbnails.  
+    * **WebP Conversion:** Create WebP copies of existing JPEG and PNG images and their thumbnails, for all sizes at once or for one thumbnail size at a time, with a live progress bar and a summary of converted, already converted, skipped and failed thumbnails.  
 
 **WebP Conversion**
 
-Go to **Custom Thumbnail Generator > Settings** and use **Convert All Thumbnails to WebP** to convert every thumbnail size, or the **WebP** button in a size's table row to convert only that size. Buttons are available for WordPress core, theme and custom sizes.
+Go to **Custom Thumbnail Generator > Settings** and use **Convert All Thumbnails to WebP** to convert the full-size image and every thumbnail size, or the **WebP** button in a size's table row to convert only that thumbnail size. Buttons are available for WordPress core, theme and custom sizes.
 
-    * A WebP file is created next to each existing thumbnail, with the same name and a `.webp` extension (for example `photo-300x200.jpg` gets `photo-300x200.webp`).  
+    * A WebP file is created next to each existing file, with the same name and a `.webp` extension (for example `photo.jpg` gets `photo.webp` and `photo-300x200.jpg` gets `photo-300x200.webp`).  
+    * For large uploads that WordPress scales down, both the scaled image WordPress displays (`photo-scaled.jpg`) and the original upload (`photo.jpg`) get a WebP copy.  
     * Original images, existing thumbnails and attachment data are never changed or deleted.  
-    * Only existing thumbnails are converted. Missing thumbnails are skipped, not created, and the full-size original image is not converted.  
+    * Only existing files are converted. Missing thumbnails are skipped, not created.  
+    * If two images in the same folder share a name with different extensions (for example `photo.jpg` and `photo.png`), their WebP copies would get the same name, so they are not converted. A WebP file that is a Media Library item of its own is never overwritten.  
     * GIF images are not converted, because animated GIFs would lose their animation.  
     * Running the conversion again is safe: thumbnails that already have a current WebP copy are reported as "already WebP" and left as they are.  
     * Images are processed one at a time in the browser, so large media libraries do not time out. Keep the page open until the run finishes.  
@@ -76,12 +78,12 @@ The image library used by WordPress on your server (Imagick or GD) must support 
 No. The plugin creates the WebP files only. To show them to visitors, use your theme, a CDN or a server rule that serves WebP files.
 
 = What do "skipped" and "failed" mean in the conversion summary? =  
-"Skipped" means a thumbnail size has no file to convert, for example because the file is missing. "Failed" means a file exists but could not be converted, for example because it is corrupt; the reason is listed below the progress bar.
+"Skipped" means a thumbnail size has no file to convert, for example because the file is missing. "Failed" means a file could not be converted, for example because it is corrupt or because another image in the same folder has the same name; the reason is listed below the progress bar.
 
 == Changelog ==
 
 = 1.1 =  
-* New: Create WebP copies of existing JPEG and PNG thumbnails, for all sizes or for a single size.  
+* New: Create WebP copies of existing JPEG and PNG images, including the full-size image, the scaled and original versions of large uploads, and every thumbnail, or of a single thumbnail size.  
 * New: "Convert All Thumbnails to WebP" button and a WebP button for every size in the default and custom size tables.  
 * New: Live progress bar with converted, already converted, skipped and failed counts, and a list of failures.  
 * GIF images are excluded from WebP conversion so that animated GIFs never lose their animation.  

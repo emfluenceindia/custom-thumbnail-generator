@@ -196,8 +196,8 @@ function ctgen_enqueue_webp_scripts( $hook_suffix ) {
 				'processing'   => __( 'Processing image %1$s of %2$s...', 'custom-thumbnail-generator' ),
 				/* translators: 1: percentage complete, 2: number of images processed, 3: total number of images. */
 				'announce'     => __( '%1$s%% done: %2$s of %3$s images processed.', 'custom-thumbnail-generator' ),
-				/* translators: 1: converted thumbnails, 2: thumbnails that already had a current WebP copy, 3: skipped thumbnails, 4: failed thumbnails. */
-				'counts'       => __( 'Thumbnails - converted: %1$s, already WebP: %2$s, skipped: %3$s, failed: %4$s.', 'custom-thumbnail-generator' ),
+				/* translators: 1: files converted, 2: files that already had a current WebP copy, 3: skipped files, 4: failed files. */
+				'counts'       => __( 'Image files - converted: %1$s, already WebP: %2$s, skipped: %3$s, failed: %4$s.', 'custom-thumbnail-generator' ),
 				/* translators: %s: number of images that could not be processed at all. */
 				'imagesFailed' => __( 'Images that could not be processed: %s.', 'custom-thumbnail-generator' ),
 				/* translators: 1: number of images processed, 2: total number of images. */

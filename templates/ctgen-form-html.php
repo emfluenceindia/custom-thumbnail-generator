@@ -81,7 +81,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div id="ctgen-webp-ui" data-state="idle">
 			<hr />
-			<p><?php esc_html_e( 'Create WebP copies of existing JPEG and PNG thumbnails. Original images and thumbnails are not changed.', 'custom-thumbnail-generator' ); ?></p>
+			<p><?php esc_html_e( 'Create WebP copies of existing JPEG and PNG images: the full-size image and all of its thumbnails. Original images and thumbnails are not changed.', 'custom-thumbnail-generator' ); ?></p>
 			<button type="button" id="ctgen-webp-convert-all" class="button button-secondary">
 				<?php esc_html_e( 'Convert All Thumbnails to WebP', 'custom-thumbnail-generator' ); ?>
 			</button>
@@ -95,7 +95,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div id="ctgen-webp-status" role="status" aria-live="polite"></div>
 			<ul id="ctgen-webp-errors"></ul>
 			<div class="notice notice-info inline ctgen-webp-gif-notice">
-				<p><strong><?php esc_html_e( 'WebP conversion:', 'custom-thumbnail-generator' ); ?></strong> <?php esc_html_e( 'Animated GIFs are not convertible to WebP without losing their animation, so GIF images are not converted. JPEG and PNG thumbnails are converted.', 'custom-thumbnail-generator' ); ?></p>
+				<p><strong><?php esc_html_e( 'WebP conversion:', 'custom-thumbnail-generator' ); ?></strong> <?php esc_html_e( 'Animated GIFs are not convertible to WebP without losing their animation, so GIF images are not converted. JPEG and PNG images are converted.', 'custom-thumbnail-generator' ); ?></p>
 			</div>
 		</div>
 	</div>

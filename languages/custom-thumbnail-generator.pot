@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-22T10:10:22+00:00\n"
+"POT-Creation-Date: 2026-10-22T12:41:31+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: custom-thumbnail-generator\n"
@@ -127,10 +127,10 @@ msgstr ""
 msgid "%1$s%% done: %2$s of %3$s images processed."
 msgstr ""
 
-#. translators: 1: converted thumbnails, 2: thumbnails that already had a current WebP copy, 3: skipped thumbnails, 4: failed thumbnails.
+#. translators: 1: files converted, 2: files that already had a current WebP copy, 3: skipped files, 4: failed files.
 #: includes/init.php:200
 #, php-format
-msgid "Thumbnails - converted: %1$s, already WebP: %2$s, skipped: %3$s, failed: %4$s."
+msgid "Image files - converted: %1$s, already WebP: %2$s, skipped: %3$s, failed: %4$s."
 msgstr ""
 
 #. translators: %s: number of images that could not be processed at all.
@@ -254,7 +254,7 @@ msgid " in the table."
 msgstr ""
 
 #: templates/ctgen-form-html.php:84
-msgid "Create WebP copies of existing JPEG and PNG thumbnails. Original images and thumbnails are not changed."
+msgid "Create WebP copies of existing JPEG and PNG images: the full-size image and all of its thumbnails. Original images and thumbnails are not changed."
 msgstr ""
 
 #: templates/ctgen-form-html.php:86
@@ -274,7 +274,7 @@ msgid "WebP conversion:"
 msgstr ""
 
 #: templates/ctgen-form-html.php:98
-msgid "Animated GIFs are not convertible to WebP without losing their animation, so GIF images are not converted. JPEG and PNG thumbnails are converted."
+msgid "Animated GIFs are not convertible to WebP without losing their animation, so GIF images are not converted. JPEG and PNG images are converted."
 msgstr ""
 
 #: webp/class-ctgen-webp-ajax-handlers.php:53
@@ -282,77 +282,85 @@ msgstr ""
 msgid "You are not authorized to perform this action!"
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:138
+#: webp/class-ctgen-webp-ajax-handlers.php:149
 msgid "No valid attachment was specified."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:145
+#: webp/class-ctgen-webp-ajax-handlers.php:156
 msgid "The specified item is not an image attachment."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:161
+#: webp/class-ctgen-webp-ajax-handlers.php:172
 msgid "Only JPEG and PNG images can be converted to WebP."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:168
+#: webp/class-ctgen-webp-ajax-handlers.php:179
 msgid "The conversion scope must be either \"all_sizes\" or \"size\"."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:177
-#: webp/class-ctgen-webp-ajax-handlers.php:194
+#: webp/class-ctgen-webp-ajax-handlers.php:188
+#: webp/class-ctgen-webp-ajax-handlers.php:205
 msgid "This attachment has no thumbnail metadata to convert."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:242
+#: webp/class-ctgen-webp-ajax-handlers.php:270
 msgid "A thumbnail size must be specified for a single-size conversion."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:251
+#: webp/class-ctgen-webp-ajax-handlers.php:279
 msgid "The requested thumbnail size is not a registered size."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:369
+#: webp/class-ctgen-webp-ajax-handlers.php:517
 msgid "The source thumbnail file could not be found."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:370
+#: webp/class-ctgen-webp-ajax-handlers.php:518
 msgid "The source thumbnail file could not be read."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:371
+#: webp/class-ctgen-webp-ajax-handlers.php:519
 msgid "The source thumbnail file appears to be corrupt."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:372
+#: webp/class-ctgen-webp-ajax-handlers.php:520
 msgid "This thumbnail is not in a supported format."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:373
+#: webp/class-ctgen-webp-ajax-handlers.php:521
 #: webp/class-ctgen-webp-converter.php:161
 msgid "GIF images are not converted to WebP. Animated GIFs would lose their animation, so all GIF files are skipped."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:374
+#: webp/class-ctgen-webp-ajax-handlers.php:522
+msgid "Another image in the same folder has the same name with a different extension, so both WebP copies would get the same file name. Nothing was written for this image."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:523
+msgid "A Media Library file already uses this WebP file name. It was left untouched."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:524
 msgid "The WebP file could not be written to its destination."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:375
+#: webp/class-ctgen-webp-ajax-handlers.php:525
 msgid "No image editor is available to process this thumbnail."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:376
+#: webp/class-ctgen-webp-ajax-handlers.php:526
 msgid "This server cannot produce WebP output."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:377
+#: webp/class-ctgen-webp-ajax-handlers.php:527
 msgid "The WebP file could not be saved."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:378
+#: webp/class-ctgen-webp-ajax-handlers.php:528
 msgid "The conversion did not produce a valid WebP file."
 msgstr ""
 
-#: webp/class-ctgen-webp-ajax-handlers.php:383
+#: webp/class-ctgen-webp-ajax-handlers.php:533
 msgid "The thumbnail could not be converted."
 msgstr ""
 
