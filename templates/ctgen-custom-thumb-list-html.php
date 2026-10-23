@@ -23,13 +23,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<th class="ctgen-text-center"><?php esc_html_e( 'Action', 'custom-thumbnail-generator' ); ?></th>
 			</tr>
 		</thead>
-		<?php $ctgen_sizes = get_option( 'ctgen_custom_image_sizes', array() ); ?>
+		<?php $ctgen_sizes = ctgen_get_custom_sizes(); ?>
 		<tbody class="ctgen-sizes-list">
-			<tr>
 				<?php foreach ( $ctgen_sizes as $ctgen_slug => $ctgen_size ) : ?>
-					<?php $ctgen_crop = ( ! empty( esc_html( $ctgen_size['crop'] ) ) ) ? 1 : 0; ?>
+					<?php $ctgen_crop = $ctgen_size['crop'] ? 1 : 0; ?>
 					<tr class="ctgen-1m-0-false">
-						<td class="ctgen-title-cell"><?php echo wp_kses_post( $ctgen_slug ); ?> </td>
+						<td class="ctgen-title-cell"><?php echo esc_html( $ctgen_slug ); ?> </td>
 						<td class="ctgen-text-center"><?php echo esc_html( $ctgen_size['width'] ); ?>px</td>
 						<td class="ctgen-text-center"><?php echo esc_html( $ctgen_size['height'] ); ?>px</td>
 						<td class="ctgen-text-center"><?php echo $ctgen_size['crop'] ? '<span class="yes">✔</span>' : '<span class="no">✖</span>'; ?></td>
@@ -53,7 +52,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</td>
 					</tr>
 				<?php endforeach; ?>
-			</tr>
 		</tbody>
 	</table>
 	<?php if ( empty( $ctgen_sizes ) ) : ?>

@@ -21,13 +21,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<tr>
 						<th><?php esc_html_e( 'Width', 'custom-thumbnail-generator' ); ?>&nbsp;</th>
 						<td>
-							<input type="number" min="25" name="ctgen-width" id="ctgen-width" required /> px
+							<input type="number" min="25" max="10000" step="1" name="ctgen-width" id="ctgen-width" required /> px
 						</td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Height', 'custom-thumbnail-generator' ); ?>&nbsp;</th>
 						<td>
-							<input type="number" min="25" name="ctgen-height" id="ctgen-height" required /> px
+							<input type="number" min="25" max="10000" step="1" name="ctgen-height" id="ctgen-height" required /> px
 						</td>
 					</tr>
 					<tr>
@@ -85,7 +85,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 
 	<div id="ctgen-tables-column">
-		<?php require_once 'ctgen-custom-thumb-list-html.php'; ?>
+		<?php require_once __DIR__ . '/ctgen-custom-thumb-list-html.php'; ?>
 		<?php
 		// Included from CTGEN_Functions::ctgen_render_settings_page_form(), so $this is that instance.
 		$this->ctgen_render_default_thumbnail_list_table();

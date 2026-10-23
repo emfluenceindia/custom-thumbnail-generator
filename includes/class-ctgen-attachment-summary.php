@@ -46,6 +46,7 @@ class CTGEN_Attachment_Summary {
 		add_action( 'wp_ajax_ctgen_usage_get_ids', array( $this, 'ajax_get_ids' ) );
 		add_action( 'wp_ajax_ctgen_usage_scan', array( $this, 'ajax_scan' ) );
 		add_action( 'wp_ajax_ctgen_summary_regenerate_webp', array( $this, 'ajax_regenerate_webp' ) );
+		add_action( 'wp_ajax_ctgen_summary_webp_parts', array( $this, 'ajax_webp_parts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_filter( 'set_screen_option_' . self::PER_PAGE_OPTION, array( $this, 'save_per_page' ), 10, 3 );
 	}
@@ -142,6 +143,9 @@ class CTGEN_Attachment_Summary {
 					/* translators: %s: number of further errors not listed. */
 					'more'       => __( '...and %s more.', 'custom-thumbnail-generator' ),
 					'regenBusy'  => __( 'Regenerating...', 'custom-thumbnail-generator' ),
+					/* translators: 1: size name and dimensions, 2: current file number, 3: total files. */
+					'regenStep'  => __( 'Generating %1$s - %2$s of %3$s...', 'custom-thumbnail-generator' ),
+					'regenLabel' => __( 'WebP regeneration progress', 'custom-thumbnail-generator' ),
 					/* translators: %s: number of files. */
 					'regenDone'  => __( 'WebP regenerated for %s files.', 'custom-thumbnail-generator' ),
 					/* translators: 1: files regenerated, 2: files that failed. */
@@ -478,7 +482,31 @@ class CTGEN_Attachment_Summary {
 			wp_die( esc_html__( 'You are not authorized to perform this action!', 'custom-thumbnail-generator' ) );
 		}
 
-		$id     = isset( $_POST['id'] ) ? absint( wp_unslash( $_POST['id'] ) ) : 0;
+		$id   = isset( $_POST['id'] ) ? absint( wp_unslash( $_POST['id'] ) ) : 0;
+		$part = isset( $_POST['part'] ) ? sanitize_text_field( wp_unslash( $_POST['part'] ) ) : '';
+
+		// One file at a time (the page shows progress per file).
+		if ( '' !== $part ) {
+			$outcome = ctgen_webp_handlers()->convert_part( $id, $part, true );
+
+			if ( is_wp_error( $outcome ) ) {
+				wp_send_json_error(
+					array(
+						'code'    => $outcome->get_error_code(),
+						'message' => $outcome->get_error_message(),
+					)
+				);
+			}
+
+			wp_send_json_success(
+				array(
+					'outcome' => $outcome['outcome'],
+					'message' => isset( $outcome['message'] ) ? $outcome['message'] : '',
+					'html'    => self::render_webp_cell( $id ),
+				)
+			);
+		}
+
 		$result = ctgen_webp_handlers()->convert_attachment( $id, 'all_sizes', '', true );
 
 		if ( is_wp_error( $result ) ) {
@@ -504,6 +532,64 @@ class CTGEN_Attachment_Summary {
 				'html'   => self::render_webp_cell( $id ),
 			)
 		);
+	}
+
+	/**
+	 * AJAX: lists the files "Regenerate WebP" will process for one image, with
+	 * readable labels (size name and dimensions). File names only, never paths.
+	 *
+	 * @return void
+	 */
+	public function ajax_webp_parts() {
+		check_ajax_referer( 'ctgen_media_actions', 'security' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not authorized to perform this action!', 'custom-thumbnail-generator' ) );
+		}
+
+		$id    = isset( $_POST['id'] ) ? absint( wp_unslash( $_POST['id'] ) ) : 0;
+		$parts = ctgen_webp_handlers()->list_parts( $id );
+
+		if ( is_wp_error( $parts ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => $parts->get_error_code(),
+					'message' => $parts->get_error_message(),
+				)
+			);
+		}
+
+		$dir  = trailingslashit( dirname( (string) get_attached_file( $id ) ) );
+		$list = array();
+
+		foreach ( $parts as $key => $entry ) {
+			$file   = isset( $entry['file'] ) ? wp_basename( (string) $entry['file'] ) : '';
+			$width  = isset( $entry['width'] ) ? (int) $entry['width'] : 0;
+			$height = isset( $entry['height'] ) ? (int) $entry['height'] : 0;
+
+			if ( ( ! $width || ! $height ) && '' !== $file && file_exists( $dir . $file ) ) {
+				$info   = wp_getimagesize( $dir . $file );
+				$width  = $info ? (int) $info[0] : 0;
+				$height = $info ? (int) $info[1] : 0;
+			}
+
+			if ( 'full' === $key ) {
+				$name = __( 'Main file', 'custom-thumbnail-generator' );
+			} elseif ( 'original_image' === $key ) {
+				$name = __( 'Original upload', 'custom-thumbnail-generator' );
+			} else {
+				$name = (string) $key;
+			}
+
+			$list[] = array(
+				'key'   => (string) $key,
+				/* translators: 1: size name, 2: width, 3: height. */
+				'label' => $width && $height ? sprintf( __( '%1$s (%2$s x %3$s)', 'custom-thumbnail-generator' ), $name, $width, $height ) : $name,
+				'file'  => $file,
+			);
+		}
+
+		wp_send_json_success( array( 'parts' => $list ) );
 	}
 
 	/**

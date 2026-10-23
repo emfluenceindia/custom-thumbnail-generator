@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Code Review - Custom Thumbnail Generator 1.1</title>
+<style>
+	@page { size: A4; margin: 18mm 15mm 18mm 15mm; }
+	:root { --ink: #1d2327; --muted: #50575e; --line: #c3c4c7; --soft: #f6f7f7; --accent: #2271b1; --high: #b32d2e; --med: #b26200; --low: #2271b1; --info: #50575e; --ok: #00702a; }
+	* { box-sizing: border-box; }
+	body { font: 10.2pt/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--ink); margin: 0; }
+	h1 { font-size: 21pt; margin: 0 0 4pt; }
+	h2 { font-size: 14pt; margin: 18pt 0 6pt; padding-bottom: 3pt; border-bottom: 2px solid var(--accent); page-break-after: avoid; }
+	h3 { font-size: 11.5pt; margin: 12pt 0 4pt; page-break-after: avoid; }
+	p { margin: 4pt 0 6pt; }
+	ul, ol { margin: 4pt 0 6pt 16pt; padding: 0; }
+	li { margin: 2pt 0; }
+	code { font: 8.8pt/1.3 Consolas, "DejaVu Sans Mono", monospace; background: var(--soft); padding: 0 2pt; border-radius: 2px; word-break: break-word; }
+	pre { font: 8.4pt/1.35 Consolas, "DejaVu Sans Mono", monospace; background: var(--soft); border: 1px solid var(--line); padding: 6pt 8pt; white-space: pre-wrap; word-break: break-word; margin: 4pt 0 8pt; page-break-inside: avoid; }
+	table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; font-size: 9pt; page-break-inside: auto; }
+	th, td { border: 1px solid var(--line); padding: 3.5pt 5pt; vertical-align: top; text-align: left; }
+	th { background: var(--soft); font-weight: 600; }
+	tr { page-break-inside: avoid; }
+	.muted { color: var(--muted); }
+	.cover { border-left: 6px solid var(--accent); padding: 4pt 0 4pt 12pt; margin-bottom: 12pt; }
+	.meta { color: var(--muted); font-size: 9.5pt; }
+	.verdict { border: 1px solid var(--line); background: var(--soft); padding: 8pt 10pt; margin: 8pt 0; }
+	.sev { display: inline-block; font-size: 8pt; font-weight: 700; color: #fff; padding: 1pt 5pt; border-radius: 3px; white-space: nowrap; }
+	.sev.medium { background: var(--med); } .sev.low { background: var(--low); } .sev.info { background: var(--info); } .sev.high { background: var(--high); }
+	.st { font-weight: 600; white-space: nowrap; } .st.fixed { color: var(--ok); } .st.open { color: var(--med); } .st.ok { color: var(--ok); }
+	.finding { border: 1px solid var(--line); margin: 8pt 0 10pt; page-break-inside: avoid; }
+	.finding .hd { background: var(--soft); padding: 5pt 8pt; border-bottom: 1px solid var(--line); font-weight: 600; }
+	.finding .bd { padding: 4pt 8pt 6pt; }
+	.finding dl { display: grid; grid-template-columns: 82pt 1fr; gap: 2pt 8pt; margin: 2pt 0; }
+	.finding dt { color: var(--muted); font-weight: 600; }
+	.finding dd { margin: 0; }
+	.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6pt; margin: 8pt 0; }
+	.kpi { border: 1px solid var(--line); padding: 6pt; text-align: center; }
+	.kpi b { display: block; font-size: 16pt; }
+	.pb { page-break-before: always; }
+	.small { font-size: 8.8pt; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+	<h1>Code Review and Security Audit</h1>
+	<div><strong>Custom Thumbnail Generator</strong> - WordPress plugin, version 1.1</div>
+	<div class="meta">Date: 23 October 2026 &middot; Reviewer: Claude (AI code review, requested by the plugin developer) &middot; Environment: WordPress 7.1.x, PHP 7.4 (Lando), Imagick + GD</div>
+</div>
+
+<div class="verdict">
+	<strong>Verdict.</strong> No high-severity vulnerability was found: every AJAX action is protected by a nonce and the <code>manage_options</code> capability, every database query is prepared, no endpoint accepts a file path, and all output is escaped. The review confirmed <strong>9 security issues (1 medium, 7 low, 1 informational)</strong> and <strong>5 functional defects</strong>; all were fixed and each fix was verified by a test that failed before the fix and passes after it. Six further items are recommendations that were deliberately not changed (section 7). PHPCS (WordPress Coding Standards), PHPCompatibilityWP (PHP 7.0+) and Plugin Check report no findings on the final code.
+</div>
+
+<div class="kpis">
+	<div class="kpi"><b>0</b>High / critical</div>
+	<div class="kpi"><b>1</b>Medium (fixed)</div>
+	<div class="kpi"><b>8</b>Low / info (fixed)</div>
+	<div class="kpi"><b>5</b>Defects (fixed)</div>
+</div>
+
+<h2>1. Scope and method</h2>
+<p><strong>Code reviewed (all shipped source, read in full):</strong></p>
+<table class="small">
+	<tr><th>Area</th><th>Files</th><th>Lines</th></tr>
+	<tr><td>Bootstrap, uninstall</td><td><code>custom-thumbnail-generator.php</code>, <code>uninstall.php</code></td><td>72</td></tr>
+	<tr><td>Settings page and legacy features</td><td><code>includes/init.php</code>, <code>includes/settings-page.php</code>, <code>includes/class-ctgen-functions.php</code>, <code>includes/class-ctgen-ajax-handlers.php</code>, <code>templates/ctgen-form-html.php</code>, <code>templates/ctgen-custom-thumb-list-html.php</code></td><td>983</td></tr>
+	<tr><td>WebP conversion</td><td><code>webp/class-ctgen-webp-converter.php</code>, <code>webp/class-ctgen-webp-ajax-handlers.php</code></td><td>986</td></tr>
+	<tr><td>Attachment Summary</td><td><code>includes/class-ctgen-usage-scanner.php</code>, <code>includes/class-ctgen-attachment-summary.php</code>, <code>includes/class-ctgen-attachment-summary-table.php</code></td><td>1,544</td></tr>
+	<tr><td>JavaScript</td><td><code>assets/js/ctgen-webp-convert.js</code>, <code>assets/js/ctgen-attachment-summary.js</code>, <code>assets/js/ctgen-media-actions.min.js</code> (shipped minified only; reviewed after un-minifying)</td><td>1,229</td></tr>
+	<tr><td>CSS</td><td><code>assets/css/*.css</code> (checked for external URLs: none, fonts are local)</td><td>373</td></tr>
+</table>
+<p><strong>Method.</strong></p>
+<ol>
+	<li>Manual line-by-line review of every request boundary (12 AJAX actions, list-table query arguments, screen option), every database query, every filesystem write/delete, every HTML output and every JavaScript DOM insertion.</li>
+	<li>Automated standards checks: PHPCS with the WordPress ruleset (<code>.phpcs.xml.dist</code>), PHPCompatibilityWP for PHP 7.0 and later, Plugin Check on the release build, <code>php -l</code> on every PHP file, <code>node --check</code> and source/minified drift check on every script.</li>
+	<li>Every suspected issue was <strong>reproduced on the running site before it was reported</strong> with a probe written for this review (<code>v2/tests/cr-probe.php</code>, 14 checks; <code>v2/tests/cr-browser.js</code>, 6 checks in Chromium). Each check states the secure behaviour as its pass condition, so a failure is a confirmed defect. Suspicions that did not reproduce are not reported as findings (section 6).</li>
+	<li>After the fixes, the full regression suite of the plugin (M1-M4 and Attachment Summary suites) was run again to make sure nothing else changed.</li>
+</ol>
+<p class="muted small">All probes use disposable fixtures only; the legacy "regenerate" loops were restricted to the fixtures, or their AJAX responses were answered by the test, so no real media was processed. The database (options, posts, post meta) and the uploads folder were compared before and after every run and were identical.</p>
+
+<h2>2. Summary of findings</h2>
+<table>
+	<tr><th>ID</th><th>Severity</th><th>Finding</th><th>Status</th></tr>
+	<tr><td>S1</td><td><span class="sev medium">MEDIUM</span></td><td>WebP copies of a deleted image stay on disk and publicly reachable</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>S2</td><td><span class="sev low">LOW</span></td><td>DOM-based XSS sink in the settings-page script (size name inserted as HTML)</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>S3</td><td><span class="sev low">LOW</span></td><td>No server-side validation of new custom sizes (0, negative, text, 99999 accepted)</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>S4</td><td><span class="sev low">LOW</span></td><td>Scripts, styles and the AJAX nonce loaded on every admin screen</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>S5</td><td><span class="sev low">LOW</span></td><td>Temporary WebP files of an interrupted conversion never cleaned up</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>S6</td><td><span class="sev low">LOW</span></td><td>Theme name and size names output with <code>wp_kses_post()</code> instead of <code>esc_html()</code></td><td class="st fixed">Fixed</td></tr>
+	<tr><td>S7</td><td><span class="sev low">LOW</span></td><td>Two PHP files without a direct-access guard</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>S8</td><td><span class="sev low">LOW</span></td><td>"Regenerate one image" accepted any post ID (no attachment/image check)</td><td class="st fixed">Hardened</td></tr>
+	<tr><td>S9</td><td><span class="sev info">INFO</span></td><td>Legacy settings-page script shipped only minified (no human-readable source)</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>B1</td><td><span class="sev medium">MEDIUM</span></td><td>"Regenerate one size" saved a full-size copy as that size when the image is smaller</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>B2</td><td><span class="sev low">LOW</span></td><td>"Regenerate Thumbnails" stops for good when one request fails</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>B3</td><td><span class="sev low">LOW</span></td><td>Every add-size error shown as "Thumbnail size exists!"</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>B4</td><td><span class="sev low">LOW</span></td><td>A damaged custom-size option causes PHP warnings on every request</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>B5</td><td><span class="sev low">LOW</span></td><td>Version constant defined only on <code>admin_init</code> (undefined-constant warnings elsewhere)</td><td class="st fixed">Fixed</td></tr>
+	<tr><td>W1-W6</td><td><span class="sev info">STANDARDS</span></td><td>Untranslated strings, invalid table markup, relative include, typos, null dependencies (section 5)</td><td class="st fixed">Fixed</td></tr>
+</table>
+<p class="small muted">Severity reflects that every affected action already requires an administrator (<code>manage_options</code>) and a valid nonce; none of the findings is exploitable by a visitor or a lower-role user on its own.</p>
+
+<h2 class="pb">3. Security findings</h2>
+
+<div class="finding">
+	<div class="hd">S1 &middot; <span class="sev medium">MEDIUM</span> &middot; WebP copies of a deleted image stay on disk and publicly reachable</div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>webp/class-ctgen-webp-ajax-handlers.php</code> (no <code>delete_attachment</code> handling existed)</dd>
+		<dt>Issue</dt><dd>WebP copies are written next to the image (<code>photo.jpg</code> &rarr; <code>photo.webp</code>, <code>photo-150x150.webp</code>, ...). WordPress deletes only the files it knows about, so when an administrator permanently deleted an image, every WebP copy remained in the uploads folder.</dd>
+		<dt>Impact</dt><dd>An image deleted to take it off the site (personal data, a copyright complaint, a leaked picture) stays publicly downloadable at a predictable URL (same name, <code>.webp</code> extension). Also leaves orphaned files.</dd>
+		<dt>Evidence</dt><dd>Probe CR6 before the fix: <em>"7 WebP copies created; after Delete permanently: 7 left on disk and still publicly reachable"</em>.</dd>
+		<dt>Fix</dt><dd>New <code>delete_webp_copies()</code> on <code>delete_attachment</code> (runs before WordPress removes the image files). It deletes the copies of the main file, the original upload, every size and every pre-edit backup size, with <code>wp_delete_file()</code>. Deliberately conservative: JPEG/PNG attachments only; folder must be inside the uploads directory (<code>realpath</code> check); nothing is deleted when another image shares the base name; never a WebP that is a Media Library item of its own; only a valid WebP whose dimensions equal those of the file it was made from.</dd>
+		<dt>Verified</dt><dd>CR6 after: <em>"4 WebP copies created; after Delete permanently: none left"</em>. CR7: deleting <code>ctgen-cr-shared.jpg</code> keeps the separate Media Library item <code>ctgen-cr-shared.webp</code> byte-identical.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">S2 &middot; <span class="sev low">LOW</span> &middot; DOM-based XSS sink in the settings-page script</div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>assets/js/ctgen-media-actions.min.js</code>, "regenerate size" handler: <code>$(cell).html(slug + ' &lt;span ...&gt;working...&lt;/span&gt;')</code></dd>
+		<dt>Issue</dt><dd>The size name read from the button's <code>data-slug</code> attribute was inserted into the page as HTML.</dd>
+		<dt>Impact</dt><dd>Script execution in an administrator's session if a size name ever contained markup. Sizes are created by the plugin as <code>ctgen_&lt;w&gt;x&lt;h&gt;</code>, so exploitation needs the option to be altered by other means (database access, another vulnerable plugin); hence LOW, but it is a real sink.</dd>
+		<dt>Evidence</dt><dd>CR-B2 against the original script, with <code>data-slug</code> set to <code>&lt;img src=x onerror="window.__ctgenXss=1"&gt;</code>: <em>"&lt;img&gt; elements created: 1, script ran: true"</em>.</dd>
+		<dt>Fix</dt><dd>Added the readable source <code>assets/js/ctgen-media-actions.js</code> (built into the .min.js by <code>v2/tools/build-js.js</code>). All size names and server messages are inserted with <code>.text()</code>; the only remaining <code>.html()</code> is the server-rendered, escaped size table. Size names in the table are now printed with <code>esc_html()</code> (S6).</dd>
+		<dt>Verified</dt><dd>CR-B2 after: <em>"&lt;img&gt; elements created: 0, script ran: false"</em>; the name is shown as text.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">S3 &middot; <span class="sev low">LOW</span> &middot; No server-side validation of new custom sizes</div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>includes/class-ctgen-ajax-handlers.php</code> lines 42-44 (original): <code>absint( sanitize_text_field( ... ) )</code></dd>
+		<dt>Issue</dt><dd>Only the browser form had <code>min="25"</code>; the server accepted any value and silently converted it.</dd>
+		<dt>Impact</dt><dd>Malformed sizes registered for the whole site (applied to every future upload): <code>ctgen_0x0</code>, <code>-150</code> stored as <code>150</code>, text stored as <code>0</code>, and 99999 x 99999.</dd>
+		<dt>Evidence</dt><dd>CR2 before: <em>"0 x 0 -&gt; ctgen_0x0; -150 x -150 -&gt; ctgen_150x150; abc x 10 -&gt; ctgen_0x10; 99999 x 99999 -&gt; ctgen_99999x99999; 10 x 10 -&gt; ctgen_10x10"</em>.</dd>
+		<dt>Fix</dt><dd>Digits only, 25 to 10,000 px (constants <code>MIN_DIMENSION</code> / <code>MAX_DIMENSION</code>), otherwise a translated error; crop stored as a boolean; the form fields got <code>max="10000" step="1"</code>. The stored option is now read through <code>ctgen_get_custom_sizes()</code>, which keeps only well-formed entries.</dd>
+		<dt>Verified</dt><dd>CR2 after: all five invalid inputs rejected; 123 x 77 with crop stored; duplicate rejected. CR-B1: the page shows the server's message.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">S4 &middot; <span class="sev low">LOW</span> &middot; Scripts, styles and the AJAX nonce loaded on every admin screen</div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>includes/init.php</code> line 124 (original), <code>ctgen_enqueue_scripts()</code> without a page check</dd>
+		<dt>Issue / impact</dt><dd>The settings-page script with its <code>ctgen_media_actions</code> nonce, the admin CSS and Font Awesome 4.7 were printed on every admin screen, for every logged-in role. The nonce alone grants nothing (all actions also check <code>manage_options</code>), but it widens exposure without need, adds weight to every admin page and lets the global CSS/Font Awesome clash with other plugins. WordPress.org guidelines ask plugins to load assets only on their own screens.</dd>
+		<dt>Evidence</dt><dd>CR9 before: <em>"on Dashboard, Media and Posts screens: ctgen-media-actions-script, ctg-admin.css, ctg-fa-css"</em>.</dd>
+		<dt>Fix</dt><dd>Script, nonce and Font Awesome only on the Settings page; the shared admin CSS on Settings and Attachment Summary; nothing elsewhere.</dd>
+		<dt>Verified</dt><dd>CR9 after: <em>"nothing from this plugin"</em>; CR-B4 in Chromium: Settings has script + CSS + icons, Media Library has none, Attachment Summary has only the CSS (header renders).</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">S5 &middot; <span class="sev low">LOW</span> &middot; Temporary files of an interrupted conversion never cleaned up</div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>webp/class-ctgen-webp-converter.php</code> line 245 (original)</dd>
+		<dt>Issue / impact</dt><dd>Each conversion writes <code>.ctgen-webp-tmp-&lt;random&gt;.webp</code> and renames it into place. If PHP stopped in between (time or memory limit), the temp file stayed in the public uploads folder for good.</dd>
+		<dt>Fix</dt><dd>Before writing, the converter removes this plugin's temp files older than one hour from that folder (once per folder per request). Newer temp files (a conversion may still be running) and any other file are never touched.</dd>
+		<dt>Verified</dt><dd>CR12: old plugin temp file removed; fresh plugin temp file kept; unrelated old dot-file kept.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">S6 &middot; <span class="sev low">LOW</span> &middot; Text printed with <code>wp_kses_post()</code> instead of <code>esc_html()</code></div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>includes/class-ctgen-functions.php</code> lines 140-142; <code>templates/ctgen-custom-thumb-list-html.php</code> line 32 (original)</dd>
+		<dt>Issue / impact</dt><dd>The active theme's name and the custom size names were output through <code>wp_kses_post()</code>, which allows HTML; on line 142 the closing <code>&lt;/span&gt;</code> was even outside the sanitised string. Theme names come from the theme's header, so any HTML in it was rendered on the settings page.</dd>
+		<dt>Fix</dt><dd>Both are plain text now: <code>esc_html()</code>; the "WordPress Core" label is translatable.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">S7 &middot; <span class="sev low">LOW</span> &middot; PHP files without a direct-access guard</div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>includes/class-ctgen-ajax-handlers.php</code>, <code>includes/class-ctgen-functions.php</code></dd>
+		<dt>Issue / impact</dt><dd>Both files only declare a class, so a direct request ran no logic; still, WordPress.org requires the guard on every PHP file, and it prevents future code in these files from running outside WordPress.</dd>
+		<dt>Fix / verified</dt><dd><code>if ( ! defined( 'ABSPATH' ) ) { exit; }</code> added. CR8: all 13 shipped PHP files have the guard (<code>uninstall.php</code> uses <code>WP_UNINSTALL_PLUGIN</code>).</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">S8 &middot; <span class="sev low">LOW</span> &middot; "Regenerate one image" accepted any post ID</div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>includes/class-ctgen-ajax-handlers.php</code> lines 122-139 (original)</dd>
+		<dt>Issue</dt><dd>The ID was cast with <code>(int)</code> (no <code>wp_unslash</code>) and passed to <code>wp_generate_attachment_metadata()</code> without checking that it is an image attachment. The probe showed WordPress itself returned nothing for a plain post, so no data was damaged (CR5 passed before the fix).</dd>
+		<dt>Fix</dt><dd>Defence in depth: <code>absint( wp_unslash() )</code>, must be an image attachment with an existing file, otherwise a clear translated error.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">S9 &middot; <span class="sev info">INFO</span> &middot; Settings-page script shipped only minified</div>
+	<div class="bd"><dl>
+		<dt>Issue</dt><dd>WordPress.org guideline 4 requires human-readable code; <code>ctgen-media-actions.min.js</code> had no source in the plugin, which also made it impossible to review or fix safely.</dd>
+		<dt>Fix</dt><dd>Readable <code>assets/js/ctgen-media-actions.js</code> added and shipped; the .min.js is built from it, and the drift check confirms they match. <code>window.reloadThumbList()</code> is kept for compatibility.</dd>
+	</dl></div>
+</div>
+
+<h2 class="pb">4. Functional defects</h2>
+
+<div class="finding">
+	<div class="hd">B1 &middot; <span class="sev medium">MEDIUM</span> &middot; "Regenerate one size" saved a full-size copy as that size</div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>includes/class-ctgen-ajax-handlers.php</code> lines 199-219 (original)</dd>
+		<dt>Issue</dt><dd>The result of <code>$editor-&gt;resize()</code> was ignored. For an image smaller than the size, <code>resize()</code> fails, but <code>save()</code> still wrote an unresized copy and the plugin recorded it in the metadata as that size.</dd>
+		<dt>Evidence</dt><dd>CR4 before, 300 x 200 image and a 1200 x 900 size: <em>new file ctgen-cr-small-300x200.jpg; metadata for the size: {"file":"ctgen-cr-small-300x200.jpg","width":300,"height":200}; "1 ctgen_cr_big thumbnails generated successfully."</em></dd>
+		<dt>Fix</dt><dd>Uses core's <code>make_subsize()</code>, which never upscales (as WordPress does on upload). <code>make_subsize()</code> is not part of the <code>WP_Image_Editor</code> base class, so other image editors fall back to <code>multi_resize()</code>, exactly as core's <code>_wp_make_subsizes()</code> does.</dd>
+		<dt>Verified</dt><dd>CR4: no file, nothing recorded. CR4a: a 120 x 80 size is created as <code>ctgen-cr-small-120x80.jpg</code> (same naming as before). CR4b: with a test editor without <code>make_subsize()</code>, the fallback creates the small size and refuses the large one, with no PHP error.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">B2 &middot; <span class="sev low">LOW</span> &middot; "Regenerate Thumbnails" stops for good when one request fails</div>
+	<div class="bd"><dl>
+		<dt>Issue</dt><dd>The next image was requested only from the success callback; one failed request (server error, timeout) left the run stuck on "Processing..." with no message.</dd>
+		<dt>Evidence</dt><dd>CR-B3 against the original script (3 images, first answer HTTP 500): <em>"1 requests, statuses (none); button Processing..."</em>.</dd>
+		<dt>Fix / verified</dt><dd>Every request advances the run (<code>.always()</code>). CR-B3 after: 3 requests, "Processed 1 of 3 &gt; Processed 2 of 3 &gt; Thumbnail generation complete!", button restored.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">B3 &middot; <span class="sev low">LOW</span> &middot; Every add-size error shown as "Thumbnail size exists!"</div>
+	<div class="bd"><dl>
+		<dt>Fix / verified</dt><dd>The server's message is shown (as text). CR-B1 before: "Thumbnail size exists!" for a 10 x 10 size; after: "Width and height must be whole numbers from 25 to 10000 pixels." The remove-size error also showed <code>undefined</code> (it read <code>response.message</code> instead of <code>response.data.message</code>); fixed.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">B4 &middot; <span class="sev low">LOW</span> &middot; A damaged custom-size option causes PHP warnings on every request</div>
+	<div class="bd"><dl>
+		<dt>Location</dt><dd><code>includes/init.php</code> <code>ctgen_register_custom_sizes()</code> and <code>ctgen_add_custom_sizes_to_media_dropdown()</code> (original)</dd>
+		<dt>Fix / verified</dt><dd>Both read the option through <code>ctgen_get_custom_sizes()</code> (array check, slug format, positive integers). CR10 before: <em>"Invalid argument supplied for foreach()"</em>; after: no warnings. The site's real stored size (<code>ctgen_250x250</code>) passes the check.</dd>
+	</dl></div>
+</div>
+
+<div class="finding">
+	<div class="hd">B5 &middot; <span class="sev low">LOW</span> &middot; Version constant defined only on <code>admin_init</code></div>
+	<div class="bd"><dl>
+		<dt>Issue</dt><dd><code>CTGEN_PLUGIN_VERSION</code> was defined from <code>get_plugin_data()</code> on every <code>admin_init</code> (a file read and header parse on each admin request); wherever <code>admin_init</code> had not run, using it raised "Use of undefined constant" warnings (observed during the CR9 probe).</dd>
+		<dt>Fix</dt><dd>Defined once at load: <code>define( 'CTGEN_PLUGIN_VERSION', '1.1' )</code>. The release script (<code>v2/deploy/svn-release.sh</code>) now refuses to build when it differs from the <code>Version:</code> header.</dd>
+	</dl></div>
+</div>
+
+<h2>5. WordPress and PHP standards</h2>
+<table>
+	<tr><th>ID</th><th>Finding</th><th>Change</th></tr>
+	<tr><td>W1</td><td>User-visible strings were hard-coded in English: AJAX messages in <code>class-ctgen-ajax-handlers.php</code>, the "template missing" error, "WordPress Core", and every dialog and status of the settings-page script.</td><td>All wrapped in <code>__()</code>/<code>esc_html__()</code> with translator comments; the script receives its strings through <code>wp_localize_script()</code>. English wording of the dialogs is unchanged. Translation template regenerated: 209 strings, 21 of them new.</td></tr>
+	<tr><td>W2</td><td>Invalid markup: the custom sizes table nested every <code>&lt;tr&gt;</code> inside another <code>&lt;tr&gt;</code>.</td><td>Outer row removed; screenshots of the table are pixel-identical before and after.</td></tr>
+	<tr><td>W3</td><td>Relative <code>require_once 'ctgen-custom-thumb-list-html.php'</code> (depends on PHP's include path).</td><td><code>require_once __DIR__ . '/...'</code>.</td></tr>
+	<tr><td>W4</td><td><code>null</code> passed as style dependencies; message typos ("Plase trye"); <code>esc_html()</code> misused inside <code>empty()</code>.</td><td><code>array()</code>; typos corrected; plain boolean check.</td></tr>
+	<tr><td>W5</td><td>Five copies of the capability check with an untranslated, unescaped <code>wp_die()</code> message.</td><td>One <code>authorize()</code> helper with <code>esc_html__()</code>.</td></tr>
+	<tr><td>W6</td><td>Dependency on the optional PHP <code>ctype</code> extension avoided in the new validation.</td><td>Regular expression instead of <code>ctype_digit()</code>.</td></tr>
+</table>
+<p><strong>Automated results on the final code:</strong></p>
+<table class="small">
+	<tr><th>Check</th><th>Command</th><th>Result</th></tr>
+	<tr><td>WordPress Coding Standards</td><td><code>phpcs --standard=.phpcs.xml.dist</code> (all 13 shipped PHP files)</td><td class="st ok">0 errors, 0 warnings</td></tr>
+	<tr><td>PHP 7.0+ compatibility</td><td><code>phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.0-</code></td><td class="st ok">0 findings</td></tr>
+	<tr><td>Plugin Check</td><td><code>lando wp plugin check</code> on the release build (<code>v2/deploy/svn-release.sh</code>)</td><td class="st ok">No errors found (release build, 38 files)</td></tr>
+	<tr><td>PHP syntax</td><td><code>php -l</code> on every PHP file of the plugin</td><td class="st ok">21/21 files clean</td></tr>
+	<tr><td>JavaScript</td><td><code>node --check</code>; <code>build-js.js --check</code> (each .min.js equals a fresh build of its source)</td><td class="st ok">3/3 OK</td></tr>
+</table>
+
+<h2 class="pb">6. Areas verified secure (no change needed)</h2>
+<table class="small">
+	<tr><th>Area</th><th>What was checked</th><th>Evidence</th></tr>
+	<tr><td>CSRF and authorisation</td><td>All 12 AJAX actions call <code>check_ajax_referer( 'ctgen_media_actions', 'security' )</code> and require <code>manage_options</code>; none is registered for logged-out users (<code>wp_ajax_nopriv_</code>).</td><td>CR1: forged nonce refused 12/12; subscriber <em>and</em> editor with a valid nonce refused 12/12; no nopriv handlers.</td></tr>
+	<tr><td>SQL injection</td><td>Usage scanner queries use <code>$wpdb-&gt;prepare()</code> with <code>esc_like()</code>; list-table filters, sort keys and order are allow-listed; meta queries use fixed keys.</td><td>Code review; A1 suite.</td></tr>
+	<tr><td>Path traversal / arbitrary file write or delete</td><td>No endpoint accepts a path: only an attachment ID and a size slug validated against registered sizes / the attachment's metadata. File names from metadata are reduced to <code>wp_basename()</code>. The converter writes only <code>.webp</code> files in the attachment's folder, refuses a destination that resolves to the source (including through <code>..</code> and symlinks), never overwrites another Media Library item, and writes through a verified temp file with an atomic rename.</td><td>M1 items 11-13, M2 items 17-24, A1 item 11.</td></tr>
+	<tr><td>Stored XSS</td><td>Attachment and post titles, custom field names, option names and file names are escaped on output (<code>esc_html</code>, <code>esc_attr</code>, <code>esc_url</code>).</td><td>CR3: titles <code>"&gt;&lt;img src=x onerror=...&gt;&lt;script&gt;</code> and a field named <code>&lt;b&gt;field&lt;/b&gt;</code> appear only as escaped text.</td></tr>
+	<tr><td>DOM XSS (new scripts)</td><td><code>ctgen-webp-convert.js</code> and <code>ctgen-attachment-summary.js</code> insert all messages with <code>.text()</code>; HTML is only the server-escaped table cell, parsed with <code>$.parseHTML()</code> (scripts not executed); the image viewer sets <code>src</code> from an <code>esc_url()</code> link.</td><td>Code review; A1 browser suite.</td></tr>
+	<tr><td>Information disclosure</td><td>Error messages are generic and translated; responses contain file names only, never server paths.</td><td>M2 item 18 (37 responses scanned), A1 item 11.</td></tr>
+	<tr><td>Resource limits</td><td>One image per WebP request; usage scan 1-25 IDs per request; screen option bounded to 1-200 rows; 2-minute client timeout per request.</td><td>A1 item 5; M3 item 23.</td></tr>
+	<tr><td>Uninstall</td><td>Removes only the plugin's own scan meta and screen option; images, WebP copies and custom sizes are kept by design (documented).</td><td>A1 item 9.</td></tr>
+	<tr><td>Not reproduced (not a finding)</td><td>Suspected global leak of the <code>wp_allow_query_attachment_by_filename</code> filter: WordPress core removes it right after use (<code>WP_Query</code> calls <code>remove_all_filters()</code>).</td><td>CR11 passes; <code>wp-includes/class-wp-query.php</code> line 1932.</td></tr>
+</table>
+
+<h2>7. Recommendations not implemented</h2>
+<table class="small">
+	<tr><th>#</th><th>Recommendation</th><th>Why not changed now / residual risk</th></tr>
+	<tr><td>R1</td><td>"Regenerate one size" processes the whole library in a single request (<code>posts_per_page =&gt; -1</code>). Process it in batches like the WebP conversion.</td><td>Needs a new UI flow (feature work). Risk: on large libraries the request can hit the PHP time limit; work already done is kept, the rest is not processed. Administrator-only.</td></tr>
+	<tr><td>R2</td><td>Use one nonce action per AJAX action instead of the shared <code>ctgen_media_actions</code>.</td><td>All actions require <code>manage_options</code>, so a leaked nonce gives no extra power. Low value, touches every script.</td></tr>
+	<tr><td>R3</td><td>Replace Font Awesome 4.7 (2016; about 108 KB per page load for its CSS and WOFF2 font, and 1.1 MB of font files in the package) with Dashicons.</td><td>Visual change; now loaded only on the Settings page, so impact is small.</td></tr>
+	<tr><td>R4</td><td>Move <code>banner-772x250.jpg</code>, <code>screenshot-1.png</code> and the unused icons (64, 128, 256 px) from <code>assets/images/</code> to the SVN <code>/assets</code> folder.</td><td>Not referenced by any code (only <code>icon-80x80.png</code> is). Removing them from the release is a packaging decision for the developer.</td></tr>
+	<tr><td>R5</td><td>When a custom size is removed or an image is edited, older WebP copies of the old file names remain until "Regenerate WebP" or deletion of the image.</td><td>Matches the existing design ("existing thumbnails remain intact"); deletion of the image now removes them (S1).</td></tr>
+	<tr><td>R6</td><td>Consider a capability filter (for example <code>upload_files</code> for the read-only Attachment Summary).</td><td>Product decision; <code>manage_options</code> everywhere is the safest default.</td></tr>
+</table>
+
+<h2 class="pb">8. Test evidence</h2>
+<h3>Code-review probes: before and after the fixes</h3>
+<table class="small">
+	<tr><th>Check</th><th>Before</th><th>After</th></tr>
+	<tr><td>CR1 CSRF and authorisation, 12 actions</td><td class="st ok">PASS</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR2 add-size server validation</td><td class="st open">FAIL</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR3 stored XSS via titles and field names</td><td class="st ok">PASS</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR4 / CR4a / CR4b regenerate one size (no upscale; small size; fallback editor)</td><td class="st open">FAIL / - / -</td><td class="st ok">PASS / PASS / PASS</td></tr>
+	<tr><td>CR5 regenerate one image accepts only images</td><td class="st ok">PASS</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR6 WebP copies deleted with the image</td><td class="st open">FAIL</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR7 a WebP Media Library item is never deleted</td><td class="st ok">PASS</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR8 direct-access guards</td><td class="st open">FAIL</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR9 assets only on plugin pages</td><td class="st open">FAIL</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR10 damaged option</td><td class="st open">FAIL</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR11 file-name search filter</td><td class="st ok">PASS</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR12 stale temp files</td><td class="muted">(added with the fix)</td><td class="st ok">PASS</td></tr>
+	<tr><td>CR-B1 / B2 / B3 browser: error message, XSS sink, stalled run</td><td class="st open">FAIL / FAIL / FAIL</td><td class="st ok">PASS / PASS / PASS</td></tr>
+	<tr><td>CR-B4 / B5 / B6 browser: assets per page, JS errors, nothing changed</td><td class="muted">-</td><td class="st ok">PASS / PASS / PASS</td></tr>
+</table>
+<p class="small muted">"Before" for CR1-CR11 = the original PHP code; for CR-B1 to CR-B3 = the original <code>ctgen-media-actions.min.js</code> served to the browser in place of the new one (<code>CTGEN_CR_OLD_JS</code>), log <code>v2/tests/results/cr-browser-old-script.txt</code>.</p>
+
+<h3>Full regression suite on the final code</h3>
+<p class="small">Command: <code>v2/tests/m4-run-all.sh v2/tests/results/cr-regression</code> (started 23 October 2026, 14:09 UTC). Logs: <code>v2/tests/results/cr-regression/</code>.</p>
+<table class="small">
+	<tr><th>Suite</th><th>Result</th></tr>
+	<tr><td>php -l, every PHP file</td><td class="st ok">21/21 clean</td></tr>
+	<tr><td>PHPCS (WordPress ruleset), whole plugin</td><td class="st ok">exit 0</td></tr>
+	<tr><td>JavaScript syntax and source/minified drift</td><td class="st ok">3 scripts OK</td></tr>
+	<tr><td>M1 converter harness (formats, corrupt/missing files, collisions, retries, source preservation)</td><td class="st ok">20/20 PASS</td></tr>
+	<tr><td>M2 backend harness (endpoints, nonce/capability, scopes, path leaks: 37 responses scanned, counts)</td><td class="st ok">26/26 PASS</td></tr>
+	<tr><td>Empty media library (real; database restored, CHECKSUM TABLE identical)</td><td class="st ok">PASS</td></tr>
+	<tr><td>M3 browser suite (WebP controls, progress, errors, keyboard, live region, shipped .min.js)</td><td class="st ok">18/18 PASS</td></tr>
+	<tr><td>Attachment Summary harness / browser suite / performance (400 images)</td><td class="st ok">8/8 PASS / 21/21 PASS / 0 wrong counts, 135 ms per image</td></tr>
+	<tr><td>Admin menu check</td><td class="st ok">9/9 PASS</td></tr>
+	<tr><td>Code-review probes / browser checks</td><td class="st ok">14/14 PASS / 6/6 PASS</td></tr>
+	<tr><td>Plugin Check, release build (38 files)</td><td class="st ok">No errors found</td></tr>
+	<tr><td>No development tooling loaded or shipped</td><td class="st ok">none found</td></tr>
+	<tr><td>Database fingerprint (options, posts, post meta) before/after; uploads folder</td><td class="st ok">identical; 256 files md5-identical; 0 temporary users</td></tr>
+</table>
+<p class="small"><strong>Legacy UI comparison (regenerate/remove controls vs. the capture taken before the WebP work):</strong> dialogs, AJAX requests, the bulk regenerate sequence, row regenerate and row remove sequences are unchanged, and all screenshots are pixel-identical. Compared with the previous run, the only new difference is the hash of the settings-page script, which is expected: it is now built from the readable source.</p>
+
+<h2>9. Files changed</h2>
+<table class="small">
+	<tr><th>File</th><th>Change</th><th>Findings</th></tr>
+	<tr><td><code>custom-thumbnail-generator.php</code></td><td>Version constant defined at load</td><td>B5</td></tr>
+	<tr><td><code>includes/init.php</code></td><td>Assets only on plugin pages; localized script strings; <code>ctgen_get_custom_sizes()</code></td><td>S4, B4, W1</td></tr>
+	<tr><td><code>includes/class-ctgen-ajax-handlers.php</code></td><td>Guard; size validation; image check; <code>make_subsize()</code> with fallback; translated messages; <code>authorize()</code></td><td>S3, S7, S8, B1, W1, W5, W6</td></tr>
+	<tr><td><code>includes/class-ctgen-functions.php</code></td><td>Guard; <code>esc_html()</code> for the source column; translated strings</td><td>S6, S7, W1</td></tr>
+	<tr><td><code>templates/ctgen-custom-thumb-list-html.php</code></td><td>Valid rows; <code>esc_html()</code>; reads validated sizes</td><td>S6, W2, W4</td></tr>
+	<tr><td><code>templates/ctgen-form-html.php</code></td><td><code>max</code>/<code>step</code> on inputs; <code>__DIR__</code> include</td><td>S3, W3</td></tr>
+	<tr><td><code>webp/class-ctgen-webp-ajax-handlers.php</code></td><td><code>delete_webp_copies()</code> on <code>delete_attachment</code></td><td>S1</td></tr>
+	<tr><td><code>webp/class-ctgen-webp-converter.php</code></td><td>Stale temp-file cleanup</td><td>S5</td></tr>
+	<tr><td><code>assets/js/ctgen-media-actions.js</code> (new), <code>.min.js</code> (rebuilt)</td><td>Readable source; text-only insertion; server messages; run never stalls; translatable</td><td>S2, S9, B2, B3, W1</td></tr>
+	<tr><td><code>readme.txt</code>, <code>languages/custom-thumbnail-generator.pot</code></td><td>WebP deletion documented; changelog; 21 new strings</td><td>-</td></tr>
+	<tr><td><code>v2/</code> (not shipped)</td><td><code>tests/cr-probe.php</code>, <code>tests/cr-browser.js</code> (new); <code>tests/m4-run-all.sh</code> runs them; <code>tests/m2-verify.php</code> calls the enqueue function as WordPress does; <code>tools/build-js.js</code> builds the third script; <code>deploy/svn-release.sh</code> checks the version constant</td><td>-</td></tr>
+</table>
+<p class="small">Backups of every edited file were kept next to it as <code>*.bak7</code> (excluded from the release by <code>.distignore</code>). Nothing was committed to version control.</p>
+
+<h2>10. Limitations</h2>
+<ul class="small">
+	<li>This is a source review plus targeted dynamic testing on one local site (Chromium 130, PHP 7.4, Imagick); it is not a penetration test of a production server. Other browsers, multisite, object caches and media offloaded to S3/CDN were not tested.</li>
+	<li>The fallback path for image editors without <code>make_subsize()</code> was tested with a test editor that wraps GD, not with a real third-party editor.</li>
+	<li>The 25-10,000 px limits for new sizes are a design choice of this review (25 matches the existing form); sizes already stored are not affected.</li>
+	<li>WebP deletion (S1) is intentionally conservative: a WebP copy whose dimensions no longer match its source (for example after the source was replaced by hand) is left in place.</li>
+</ul>
+
+</body>
+</html>

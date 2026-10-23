@@ -119,55 +119,86 @@ require_once CTGEN_PLUGIN_PATH . 'class-ctgen-ajax-handlers.php';
 new CTGEN_Ajax_Handlers();
 
 /**
- * Equeue scripts and Localize for AJAX handling
+ * Enqueue scripts and Localize for AJAX handling
  */
 add_action( 'admin_enqueue_scripts', 'ctgen_enqueue_scripts' );
 
 /**
- * Enqueues the admin script, its localized AJAX data, and the admin styles.
+ * Enqueues the admin script, its localized AJAX data, and the admin styles on
+ * the plugin's own pages only (the script and the nonce are not needed elsewhere).
  *
+ * @param string $hook_suffix The current admin page hook suffix (passed by WordPress).
  * @return void
  */
-function ctgen_enqueue_scripts() {
-	/**
-	 * Enqueue media action scripts
-	 */
-	wp_enqueue_script(
-		'ctgen-media-actions-script',
-		CTGEN_PLUGIN_DIR . 'assets/js/ctgen-media-actions.min.js',
-		array( 'jquery' ),
-		CTGEN_PLUGIN_VERSION,
-		true
-	);
+function ctgen_enqueue_scripts( $hook_suffix = '' ) {
+	$settings_hook = ctgen_admin_page_hook( 'settings' );
+	$plugin_hooks  = array_filter( array( $settings_hook, ctgen_admin_page_hook( 'attachment_summary' ) ) );
 
-	/**
-	 * Localize media action script
-	 */
-	wp_localize_script(
-		'ctgen-media-actions-script',
-		'CTGENMediaAction',
-		array(
-			'ajax_url' => admin_url( 'admin-ajax.php' ),
-			'nonce'    => wp_create_nonce( 'ctgen_media_actions' ),
-		)
-	);
+	if ( ! in_array( $hook_suffix, $plugin_hooks, true ) ) {
+		return;
+	}
 
-	/** Enqueue admin settings page CSS */
+	$is_settings_page = $settings_hook === $hook_suffix;
+
+	if ( $is_settings_page ) {
+		/**
+		 * Enqueue media action scripts. The readable source is
+		 * assets/js/ctgen-media-actions.js (see v2/tools/build-js.js).
+		 */
+		wp_enqueue_script(
+			'ctgen-media-actions-script',
+			CTGEN_PLUGIN_DIR . 'assets/js/ctgen-media-actions.min.js',
+			array( 'jquery' ),
+			CTGEN_PLUGIN_VERSION,
+			true
+		);
+
+		/**
+		 * Localize media action script
+		 */
+		wp_localize_script(
+			'ctgen-media-actions-script',
+			'CTGENMediaAction',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'ctgen_media_actions' ),
+				'i18n'     => array(
+					'requestFailed'     => __( 'Unknown error! Request failed.', 'custom-thumbnail-generator' ),
+					/* translators: %s: thumbnail size name, e.g. ctgen_300x200. */
+					'confirmRemove'     => __( 'You won\'t be able to generate %s thumbnail in the future. However, all existing thumbnails will remain intact and accessible! Press OK to proceed.', 'custom-thumbnail-generator' ),
+					'working'           => __( 'Working...', 'custom-thumbnail-generator' ),
+					'workingLower'      => __( 'working...', 'custom-thumbnail-generator' ),
+					/* translators: %s: thumbnail size name, e.g. ctgen_300x200. */
+					'confirmRegenerate' => __( 'This will regenerate all existing thumbnails of %s size. Press OK to proceed.', 'custom-thumbnail-generator' ),
+					'noImages'          => __( 'Media library contains no image. Thumbnail generation failed.', 'custom-thumbnail-generator' ),
+					'processing'        => __( 'Processing...', 'custom-thumbnail-generator' ),
+					/* translators: 1: images processed so far, 2: total number of images. */
+					'processed'         => __( 'Processed %1$s of %2$s', 'custom-thumbnail-generator' ),
+					'complete'          => __( 'Thumbnail generation complete!', 'custom-thumbnail-generator' ),
+					'regenerate'        => __( 'Regenerate Thumbnails', 'custom-thumbnail-generator' ),
+				),
+			)
+		);
+	}
+
+	/** Enqueue admin settings page CSS (also used by the Attachment Summary page). */
 	wp_enqueue_style(
 		'ctg-admin.css',
 		CTGEN_PLUGIN_DIR . 'assets/css/ctgen-admin.min.css',
-		null,
+		array(),
 		CTGEN_PLUGIN_VERSION
 	);
 
-	/** Enqueue FontSAwesome */
-	wp_enqueue_style(
-		'ctg-fa-css',
-		CTGEN_PLUGIN_DIR . 'assets/css/font-awesome.min.css',
-		null,
-		'4.7.0',
-		'all'
-	);
+	if ( $is_settings_page ) {
+		/** Enqueue FontAwesome (icons of the settings page). */
+		wp_enqueue_style(
+			'ctg-fa-css',
+			CTGEN_PLUGIN_DIR . 'assets/css/font-awesome.min.css',
+			array(),
+			'4.7.0',
+			'all'
+		);
+	}
 }
 
 /**
@@ -262,11 +293,39 @@ add_action( 'init', 'ctgen_register_custom_sizes' );
  * @return void
  */
 function ctgen_register_custom_sizes() {
-	$sizes = get_option( 'ctgen_custom_image_sizes', array() );
-
-	foreach ( $sizes as $slug => $args ) {
+	foreach ( ctgen_get_custom_sizes() as $slug => $args ) {
 		add_image_size( $slug, $args['width'], $args['height'], $args['crop'] );
 	}
+}
+
+/**
+ * The plugin's custom sizes from the ctgen_custom_image_sizes option, keeping
+ * only well-formed entries (slug "ctgen_<width>x<height>", positive integer
+ * dimensions), so a damaged option can never break size registration.
+ *
+ * @return array<string, array{width: int, height: int, crop: bool}>
+ */
+function ctgen_get_custom_sizes() {
+	$stored = get_option( 'ctgen_custom_image_sizes', array() );
+	$sizes  = array();
+
+	if ( ! is_array( $stored ) ) {
+		return $sizes;
+	}
+
+	foreach ( $stored as $slug => $args ) {
+		if ( ! is_string( $slug ) || ! preg_match( '/^ctgen_\d+x\d+$/', $slug ) || ! is_array( $args ) || empty( $args['width'] ) || empty( $args['height'] ) ) {
+			continue;
+		}
+
+		$sizes[ $slug ] = array(
+			'width'  => absint( $args['width'] ),
+			'height' => absint( $args['height'] ),
+			'crop'   => ! empty( $args['crop'] ),
+		);
+	}
+
+	return $sizes;
 }
 
 
@@ -282,8 +341,7 @@ add_filter( 'image_size_names_choose', 'ctgen_add_custom_sizes_to_media_dropdown
  * @return array
  */
 function ctgen_add_custom_sizes_to_media_dropdown( $sizes ) {
-	$custom_sizes = get_option( 'ctgen_custom_image_sizes', array() );
-	foreach ( $custom_sizes as $slug => $args ) {
+	foreach ( array_keys( ctgen_get_custom_sizes() ) as $slug ) {
 		$sizes[ $slug ] = $slug;
 	}
 

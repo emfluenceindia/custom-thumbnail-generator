@@ -459,7 +459,8 @@
 	/* ---------------------------------------------------- regenerate WebP */
 
 	/**
-	 * Re-creates the WebP copies of one image and swaps in the refreshed cell.
+	 * Re-creates the WebP copies of one image, one file at a time, showing a
+	 * progress bar and the size being generated; then swaps in the refreshed cell.
 	 *
 	 * @param {HTMLElement} button The clicked "Regenerate WebP" button.
 	 */
@@ -469,6 +470,8 @@
 		var $cell = $button.closest( '.ctgen-webp-cell' );
 		var label = $button.text();
 		var $status = $cell.find( '.ctgen-webp-regenerate-status' );
+		var $progress = $( '<div class="ctgen-webp-progress"><progress max="1" value="0"></progress><span class="ctgen-webp-progress-text" role="status" aria-live="polite"></span></div>' );
+		var job = { converted: 0, failed: 0, errors: [], html: null, consecutiveErrors: 0 };
 
 		if ( ! id || $button.prop( 'disabled' ) ) {
 			return;
@@ -476,30 +479,99 @@
 
 		$button.prop( 'disabled', true ).text( i18n.regenBusy );
 		$status.text( '' );
+		$progress.find( 'progress' ).attr( 'aria-label', i18n.regenLabel );
+		$button.before( $progress );
 
-		request( { action: 'ctgen_summary_regenerate_webp', id: id } )
+		function finish( stopReason ) {
+			var message;
+			var $new;
+
+			if ( stopReason ) {
+				message = format( i18n.regenError, stopReason );
+			} else if ( job.failed ) {
+				message = format( i18n.regenSome, job.converted, job.failed ) + ' ' + job.errors.join( '; ' );
+			} else {
+				message = format( i18n.regenDone, job.converted );
+			}
+
+			if ( job.html ) {
+				$new = $( $.parseHTML( job.html ) );
+				$cell.replaceWith( $new );
+				$new.find( '.ctgen-webp-regenerate-status' ).text( message );
+				$new.find( '.ctgen-webp-regenerate' ).trigger( 'focus' );
+				return;
+			}
+
+			$progress.remove();
+			$button.prop( 'disabled', false ).text( label );
+			$status.text( message );
+		}
+
+		function step( parts, index ) {
+			var part;
+
+			if ( index >= parts.length ) {
+				$progress.find( 'progress' ).attr( { max: parts.length || 1, value: parts.length || 1 } );
+				finish( null );
+				return;
+			}
+
+			part = parts[ index ];
+			$progress.find( 'progress' ).attr( { max: parts.length, value: index } );
+			$progress.find( '.ctgen-webp-progress-text' ).text( format( i18n.regenStep, part.label, index + 1, parts.length ) );
+
+			request( { action: 'ctgen_summary_regenerate_webp', id: id, part: part.key } )
+				.done( function ( response ) {
+					var data = response && response.data;
+
+					if ( response && true === response.success && data && 'string' === typeof data.html ) {
+						job.html = data.html;
+						job.consecutiveErrors = 0;
+						if ( 'converted' === data.outcome ) {
+							job.converted++;
+						} else if ( 'failed' === data.outcome ) {
+							job.failed++;
+							job.errors.push( part.label + ': ' + data.message );
+						}
+					} else {
+						job.failed++;
+						job.errors.push( part.label + ': ' + ( data && data.message ? data.message : i18n.malformed ) );
+					}
+
+					step( parts, index + 1 );
+				} )
+				.fail( function ( xhr, textStatus ) {
+					if ( isAuthFailure( xhr ) ) {
+						finish( i18n.auth );
+						return;
+					}
+
+					job.failed++;
+					job.errors.push( part.label + ': ' + failureReason( xhr, textStatus ) );
+					job.consecutiveErrors++;
+
+					if ( job.consecutiveErrors >= MAX_CONSECUTIVE_REQUEST_ERRORS ) {
+						finish( failureReason( xhr, textStatus ) );
+						return;
+					}
+
+					step( parts, index + 1 );
+				} );
+		}
+
+		request( { action: 'ctgen_summary_webp_parts', id: id } )
 			.done( function ( response ) {
-				var data = response && response.data;
-				var $new;
-				var converted;
-				var failed;
+				var parts = response && true === response.success && response.data ? response.data.parts : null;
 
-				if ( response && true === response.success && data && 'string' === typeof data.html && data.counts && $.isArray( data.errors ) ) {
-					$new = $( $.parseHTML( data.html ) );
-					$cell.replaceWith( $new );
-					converted = parseInt( data.counts.converted, 10 ) || 0;
-					failed = parseInt( data.counts.failed, 10 ) || 0;
-					$new.find( '.ctgen-webp-regenerate-status' ).text( failed ? format( i18n.regenSome, converted, failed ) + ' ' + data.errors.join( '; ' ) : format( i18n.regenDone, converted ) );
-					$new.find( '.ctgen-webp-regenerate' ).trigger( 'focus' );
+				if ( ! $.isArray( parts ) ) {
+					finish( response && response.data && response.data.message ? response.data.message : i18n.malformed );
 					return;
 				}
 
-				$button.prop( 'disabled', false ).text( label );
-				$status.text( format( i18n.regenError, data && data.message ? data.message : i18n.malformed ) );
+				step( parts, 0 );
 			} )
 			.fail( function ( xhr, textStatus ) {
-				$button.prop( 'disabled', false ).text( label );
-				$status.text( format( i18n.regenError, isAuthFailure( xhr ) ? i18n.auth : failureReason( xhr, textStatus ) ) );
+				finish( isAuthFailure( xhr ) ? i18n.auth : failureReason( xhr, textStatus ) );
 			} );
 	}
 

@@ -35,6 +35,7 @@ Go to **Custom Thumbnail Generator > Settings** and use **Convert All Thumbnails
     * Original images, existing thumbnails and attachment data are never changed or deleted.  
     * Only existing files are converted. Missing thumbnails are skipped, not created.  
     * If two images in the same folder share a name with different extensions (for example `photo.jpg` and `photo.png`), their WebP copies would get the same name, so they are not converted. A WebP file that is a Media Library item of its own is never overwritten.  
+    * When a JPEG or PNG image is permanently deleted from the Media Library, its WebP copies are deleted with it, so the deleted image does not stay online as WebP. A WebP file that is a Media Library item of its own is never deleted this way.  
     * GIF images are not converted, because animated GIFs would lose their animation.  
     * Running the conversion again is safe: files that already have a current WebP copy are reported as "already WebP" and left as they are.  
     * The browser sends one image per request, so a large media library is never converted in one long request. Keep the page open until the run finishes.  
@@ -49,7 +50,7 @@ Go to **Custom Thumbnail Generator > Attachment Summary** for a table of every i
     * The usage of the images shown on the page is refreshed automatically in the background every time the page loads, and the refresh icon next to an image's Attachment label rescans that image. To filter or sort by usage across all pages, click **Scan all images** (or **Scan images not scanned yet**); images are scanned ten at a time with a progress bar.  
     * The scan looks at the content of posts, pages and other post types, custom fields (including page builder data such as Elementor), featured images, galleries, WooCommerce product galleries, widgets, theme settings, the site icon and the logo. It recognises every size of an image, its scaled and edited versions and its WebP copies.  
     * Images used only in theme files, CSS or on other websites cannot be detected, so "No usage found" does not prove that an image is unused. Revisions and automatic drafts are not counted.  
-    * For JPEG and PNG images the WebP status shows the size of the WebP copies, the compression ratio compared with the original files, a bar with the disk space that could be saved, and a **Regenerate WebP** button that re-creates the WebP copies of the main file and every size (original files are never changed).  
+    * For JPEG and PNG images the WebP status shows the size of the WebP copies, the compression ratio compared with the original files, a bar with the disk space that could be saved, and a **Regenerate WebP** button that re-creates the WebP copies of the main file and every size one file at a time, with a progress bar showing which size is being generated (original files are never changed).  
     * Scanning only reads your content. The only data it stores is the scan result on each image, which is removed when the plugin is deleted.  
     * Scanning time grows with the size of the site: on a test site with 1,262 posts it took about 0.15 seconds per image.  
 
@@ -81,7 +82,7 @@ No. Option to remove any thumbnail size registered by a theme or WordPress core 
 No. There is absolutely no restriction on the number of thumbnail sizes. Unlimited number of thumbnail sizes can be registered and made avaialble across all themes.
 
 = Does WebP conversion change or delete my original images? =  
-No. WebP copies are separate files created next to the existing image files. Original images, thumbnails and attachment data stay exactly as they were.
+No. WebP copies are separate files created next to the existing image files. Original images, thumbnails and attachment data stay exactly as they were. When you permanently delete an image, its WebP copies are deleted too.
 
 = Why were my GIF images not converted? =  
 GIF images are skipped on purpose. Converting an animated GIF to WebP would lose its animation, so GIFs are not converted.
@@ -108,6 +109,12 @@ No. The plugin creates the WebP files only. To show them to visitors, use your t
 * Translation template updated with the new strings.  
 * New: Attachment Summary page listing every image with the post it is attached to and every place it is used (batched, resumable usage scan), file sizes and WebP copy sizes, an image preview popup, filters, search, sorting and pagination.  
 * The plugin now has its own admin menu: **Custom Thumbnail Generator > Settings** (previously **Settings > Custom Thumbnail Generator**).  
+* Security: WebP copies of an image are deleted when the image is permanently deleted.  
+* Security: custom sizes are validated on the server (whole numbers from 25 to 10000 pixels).  
+* Security: the plugin's scripts, styles and security token load only on its own admin pages; size names and server messages are always shown as text.  
+* Fix: regenerating one size no longer records a full-size copy as that size when an image is smaller than the size.  
+* Fix: "Regenerate Thumbnails" no longer stops when one image fails; error messages from the server are shown instead of "Thumbnail size exists!".  
+* All messages of the settings page are now translatable.  
 
 = 1.0.2 =  
 * WordPress version compatibility  

@@ -5,6 +5,10 @@
  * @package Custom_Thumbnail_Generator
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 /**
  * Renders the settings form and the default thumbnail sizes table.
  */
@@ -136,13 +140,11 @@ class CTGEN_Functions {
 	 * @return string
 	 */
 	private function ctgen_get_size_table_title( $slug ) {
-		if ( in_array( $slug, CTGEN_NATIVE_THUMB_SIZES, true ) ) {
-			$slug = wp_kses_post( "<span class='ctgen-image-size-register-by'>WordPress Core</span>" );
-		} else {
-			$slug = wp_kses_post( "<span class='ctgen-image-size-register-by'>" . wp_get_theme()->get( 'Name' ) ) . '</span>';
-		}
+		$source = in_array( $slug, CTGEN_NATIVE_THUMB_SIZES, true )
+			? __( 'WordPress Core', 'custom-thumbnail-generator' )
+			: wp_get_theme()->get( 'Name' );
 
-		return $slug;
+		return '<span class="ctgen-image-size-register-by">' . esc_html( $source ) . '</span>';
 	}
 
 	/** Render the form */
@@ -150,7 +152,7 @@ class CTGEN_Functions {
 		$html_template = CTGEN_TEMPLATE_DIR . 'ctgen-form-html.php';
 
 		if ( ! file_exists( $html_template ) ) {
-			echo '<p class="ctg-common-error">Error! Template file missing.</p>';
+			echo '<p class="ctg-common-error">' . esc_html__( 'Error! Template file missing.', 'custom-thumbnail-generator' ) . '</p>';
 			return;
 		}
 

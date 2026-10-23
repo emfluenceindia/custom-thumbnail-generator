@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Builds assets/js/ctgen-webp-convert.min.js from the readable source
- * assets/js/ctgen-webp-convert.js with terser (pinned in package.json).
+ * Builds each assets/js/*.min.js listed in FILES from its readable source
+ * (e.g. ctgen-webp-convert.js) with terser (pinned in package.json).
  *
  *   node build-js.js          regenerate the .min.js
  *   node build-js.js --check  exit 1 if the committed .min.js is not exactly what
@@ -19,6 +19,7 @@ const ASSETS = path.resolve( __dirname, '../../assets/js' );
 const FILES = [
 	[ 'ctgen-webp-convert.js', 'ctgen-webp-convert.min.js' ],
 	[ 'ctgen-attachment-summary.js', 'ctgen-attachment-summary.min.js' ],
+	[ 'ctgen-media-actions.js', 'ctgen-media-actions.min.js' ],
 ];
 const CHECK = process.argv.includes( '--check' );
 

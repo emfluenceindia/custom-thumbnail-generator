@@ -168,3 +168,31 @@ temporary users 0, fixture files 0.
      concurrency itself was not exercised).
 4.7  Plugin Check on the git working copy reports dev-only files (see row
      38). Release via v2/deploy/svn-release.sh, which excludes them.
+
+
+6. RE-RUN ON 2026-10-23 (after the Attachment Summary work)
+-----------------------------------------------------------
+Why: the converter (webp/class-ctgen-webp-ajax-handlers.php) was refactored
+for per-file "Regenerate WebP" progress, and includes/init.php now loads the
+Attachment Summary page. The evidence above predated both changes.
+
+Command: v2/tests/m4-run-all.sh v2/tests/results/m4-rerun-2026-10-23
+Final run started 2026-10-23 13:25 UTC. Evidence in that folder.
+
+Results: all 40 rows re-run on the current code, same outcomes as section 3.
+ - php -l 20/20 files; PHPCS exit 0; JS syntax and build drift OK.
+ - M1 20/20, M2 26/26, empty library PASS, M3 browser 18/18.
+ - Row 29 legacy comparison: byte-identical to the earlier M4 result
+   (same traced differences, no new ones).
+ - Plugin Check, release build (37 files): no errors.
+ - Also run: A1 harness 8/8, A1 browser 21/21, A1 performance (400 images,
+   0 wrong counts), admin menu 9/9.
+ - Database fingerprint identical before/after; uploads 256 files, md5
+   identical; 0 temporary users, 0 fixture files.
+
+Defect found in the first re-run (test tooling, not the plugin):
+ - menu-check.js opened the Attachment Summary page, whose background scan
+   rewrote the "scanned at" time of the 20 images shown (found references
+   unchanged). The 20 values were restored from a DB export taken just before
+   the run (0 rows now differ). menu-check.js now backs up and restores the
+   stored scan results exactly and checks it (new check: 9/9).

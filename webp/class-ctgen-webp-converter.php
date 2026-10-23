@@ -47,6 +47,13 @@ class CTGEN_Webp_Converter {
 	const OUTPUT_MIME_TYPE = 'image/webp';
 
 	/**
+	 * File name prefix of the temporary files written during a conversion.
+	 *
+	 * @var string
+	 */
+	const TEMP_PREFIX = '.ctgen-webp-tmp-';
+
+	/**
 	 * Converts one source image file to a WebP file at the given destination.
 	 *
 	 * Collision policy: the destination path is fully controlled by the
@@ -242,7 +249,9 @@ class CTGEN_Webp_Converter {
 	 */
 	private function save_via_temp_file( $editor, $destination_path, $source_path ) {
 		$temp_dir  = dirname( $destination_path );
-		$temp_hint = $temp_dir . '/.ctgen-webp-tmp-' . wp_generate_password( 12, false, false ) . '.webp';
+		$temp_hint = $temp_dir . '/' . self::TEMP_PREFIX . wp_generate_password( 12, false, false ) . '.webp';
+
+		$this->delete_stale_temp_files( $temp_dir );
 
 		$saved = $editor->save( $temp_hint, self::OUTPUT_MIME_TYPE );
 
@@ -332,6 +341,33 @@ class CTGEN_Webp_Converter {
 			'width'  => (int) $image_info[0],
 			'height' => (int) $image_info[1],
 		);
+	}
+
+	/**
+	 * Removes this plugin's temporary files older than an hour from a folder
+	 * (left behind only if PHP stopped in the middle of a conversion). Each
+	 * folder is checked once per request.
+	 *
+	 * @param string $directory Absolute folder path.
+	 * @return void
+	 */
+	private function delete_stale_temp_files( $directory ) {
+		static $checked = array();
+
+		if ( isset( $checked[ $directory ] ) ) {
+			return;
+		}
+
+		$checked[ $directory ] = true;
+		$names                 = is_dir( $directory ) ? scandir( $directory ) : false;
+
+		foreach ( false === $names ? array() : $names as $name ) {
+			$path = trailingslashit( $directory ) . $name;
+
+			if ( 0 === strpos( $name, self::TEMP_PREFIX ) && is_file( $path ) && filemtime( $path ) < time() - HOUR_IN_SECONDS ) {
+				$this->delete_temp_file( $path );
+			}
+		}
 	}
 
 	/**

@@ -1,0 +1,884 @@
+# Copyright (C) 2026 Subrata Sarkar
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Custom Thumbnail Generator 1.1\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/custom-thumbnail-generator\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-10-23T09:43:40+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: custom-thumbnail-generator\n"
+
+#. Plugin Name of the plugin
+#: custom-thumbnail-generator.php
+#: includes/class-ctgen-functions.php:99
+#: includes/settings-page.php:17
+#: includes/settings-page.php:18
+#: includes/settings-page.php:29
+#: templates/ctgen-form-html.php:13
+msgid "Custom Thumbnail Generator"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: custom-thumbnail-generator.php
+msgid "https://github.com/emfluenceindia/Custom-Thumbnail-Generator"
+msgstr ""
+
+#. Description of the plugin
+#: custom-thumbnail-generator.php
+msgid "Create theme-independent custom thumbnail sizes with Regenerate feature."
+msgstr ""
+
+#. Author of the plugin
+#: custom-thumbnail-generator.php
+msgid "Subrata Sarkar"
+msgstr ""
+
+#. Author URI of the plugin
+#: custom-thumbnail-generator.php
+msgid "https://profiles.wordpress.org/subrataemfluence"
+msgstr ""
+
+#: custom-thumbnail-generator.php:46
+#: includes/settings-page.php:30
+msgid "Settings"
+msgstr ""
+
+#: includes/class-ctgen-ajax-handlers.php:36
+msgid "Not all field values are supplied!"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:55
+msgid "Image"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:56
+msgid "Type"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:57
+msgid "Attachment"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:58
+msgid "Current size"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:59
+msgid "WebP status"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:238
+msgid "Filter by type"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:240
+msgid "All types"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:245
+msgid "Other"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:249
+msgid "Filter by attachment"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:251
+msgid "Attached and unattached"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:252
+msgid "Attached"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:253
+msgid "Unattached"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:257
+msgid "Filter by usage"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:259
+msgid "Any usage"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:260
+msgid "Usage found"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:261
+#: includes/class-ctgen-attachment-summary.php:367
+msgid "No usage found"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:262
+msgid "Not scanned yet"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:278
+msgid "Filter"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:288
+msgid "No images found."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:298
+#: includes/class-ctgen-attachment-summary.php:456
+msgid "(no title)"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:306
+msgid "Edit"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:318
+msgid "View"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:378
+msgid "not stored locally"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary-table.php:383
+msgid "Not stored locally"
+msgstr ""
+
+#. translators: 1: total size, 2: number of files.
+#: includes/class-ctgen-attachment-summary-table.php:387
+#: includes/class-ctgen-attachment-summary.php:690
+#, php-format
+msgid "%1$s in %2$s file"
+msgid_plural "%1$s in %2$s files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-ctgen-attachment-summary.php:63
+msgid "Images per page"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:114
+msgid "Finding images to scan..."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:115
+msgid "Scanning..."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:116
+msgid "There are no images to scan."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:117
+msgid "Every image has been scanned already. Use \"Scan all images\" to scan them again."
+msgstr ""
+
+#. translators: 1: number of images scanned so far, 2: total number of images.
+#: includes/class-ctgen-attachment-summary.php:119
+#, php-format
+msgid "Scanning images %1$s of %2$s..."
+msgstr ""
+
+#. translators: 1: percentage complete, 2: images scanned, 3: total images.
+#: includes/class-ctgen-attachment-summary.php:121
+#, php-format
+msgid "%1$s%% done: %2$s of %3$s images scanned."
+msgstr ""
+
+#. translators: %s: number of images scanned.
+#: includes/class-ctgen-attachment-summary.php:123
+#, php-format
+msgid "Scan complete: %s images scanned. Reload the page to update filters and sorting."
+msgstr ""
+
+#. translators: 1: images scanned, 2: total images.
+#: includes/class-ctgen-attachment-summary.php:125
+#, php-format
+msgid "Scan finished with errors: %1$s of %2$s images scanned. See the list below."
+msgstr ""
+
+#. translators: 1: images scanned, 2: total images, 3: reason.
+#: includes/class-ctgen-attachment-summary.php:127
+#, php-format
+msgid "Scan stopped after %1$s of %2$s images: %3$s"
+msgstr ""
+
+#. translators: %s: reason.
+#: includes/class-ctgen-attachment-summary.php:129
+#, php-format
+msgid "The scan could not start: %s"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:130
+msgid "Updating usage for the images on this page..."
+msgstr ""
+
+#. translators: %s: number of images.
+#: includes/class-ctgen-attachment-summary.php:132
+#, php-format
+msgid "Usage updated for the %s images on this page."
+msgstr ""
+
+#. translators: 1: images updated, 2: images on the page.
+#: includes/class-ctgen-attachment-summary.php:134
+#, php-format
+msgid "Usage updated for %1$s of %2$s images on this page. See the list below."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:135
+#: includes/init.php:232
+msgid "Your session has expired or you are not allowed to do this. Reload the page and try again."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:136
+#: includes/init.php:233
+msgid "The server could not be reached."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:137
+#: includes/init.php:234
+msgid "The server took too long to respond."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:138
+#: includes/init.php:235
+msgid "The server sent an unexpected response."
+msgstr ""
+
+#. translators: 1: attachment ID, 2: error message.
+#: includes/class-ctgen-attachment-summary.php:140
+#: includes/init.php:237
+#, php-format
+msgid "Image ID %1$s: %2$s"
+msgstr ""
+
+#. translators: %s: error message.
+#: includes/class-ctgen-attachment-summary.php:142
+#, php-format
+msgid "The scan failed: %s"
+msgstr ""
+
+#. translators: %s: number of further errors not listed.
+#: includes/class-ctgen-attachment-summary.php:144
+#: includes/init.php:241
+#, php-format
+msgid "...and %s more."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:145
+msgid "Regenerating..."
+msgstr ""
+
+#. translators: 1: size name and dimensions, 2: current file number, 3: total files.
+#: includes/class-ctgen-attachment-summary.php:147
+#, php-format
+msgid "Generating %1$s - %2$s of %3$s..."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:148
+msgid "WebP regeneration progress"
+msgstr ""
+
+#. translators: %s: number of files.
+#: includes/class-ctgen-attachment-summary.php:150
+#, php-format
+msgid "WebP regenerated for %s files."
+msgstr ""
+
+#. translators: 1: files regenerated, 2: files that failed.
+#: includes/class-ctgen-attachment-summary.php:152
+#, php-format
+msgid "WebP regenerated for %1$s files; %2$s failed."
+msgstr ""
+
+#. translators: %s: error message.
+#: includes/class-ctgen-attachment-summary.php:154
+#, php-format
+msgid "WebP could not be regenerated: %s"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:179
+msgid "Custom Thumbnail Generator - Attachment Summary"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:182
+msgid "Every image in the Media Library, the post it is attached to, and where it is used. The usage of the images on this page is refreshed automatically when the page loads; use the refresh icon to update one image. Scanning only reads your content; nothing is changed."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:183
+msgid "To filter or sort by usage across all pages, scan every image first:"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:185
+msgid "Scan all images"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:186
+msgid "Scan images not scanned yet"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:188
+msgid "Usage scan progress"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:195
+msgid "Usage is found in post and page content, custom fields (including page builders), widgets, theme settings, the site icon and the logo. Images used only in theme files, CSS or on other websites cannot be detected, so \"No usage found\" does not prove that an image is unused."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:201
+msgid "Search images"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:211
+msgid "Close image preview"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:230
+#: includes/class-ctgen-attachment-summary.php:273
+#: includes/class-ctgen-attachment-summary.php:482
+#: includes/class-ctgen-attachment-summary.php:547
+#: webp/class-ctgen-webp-ajax-handlers.php:53
+#: webp/class-ctgen-webp-ajax-handlers.php:74
+msgid "You are not authorized to perform this action!"
+msgstr ""
+
+#. translators: %d: maximum number of images per request.
+#: includes/class-ctgen-attachment-summary.php:284
+#, php-format
+msgid "Send between 1 and %d image IDs per request."
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:334
+msgid "attached"
+msgstr ""
+
+#. translators: %s: image title.
+#: includes/class-ctgen-attachment-summary.php:358
+#, php-format
+msgid "Refresh where \"%s\" is used"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:359
+msgid "Refresh"
+msgstr ""
+
+#. translators: %s: time since the scan, e.g. "5 mins".
+#: includes/class-ctgen-attachment-summary.php:366
+#, php-format
+msgid "Scanned %s ago"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:371
+#: includes/class-ctgen-attachment-summary.php:378
+msgid "Usage not scanned yet"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:371
+msgid "None"
+msgstr ""
+
+#. translators: %s: number of posts, pages or settings.
+#: includes/class-ctgen-attachment-summary.php:385
+#, php-format
+msgid "%s place"
+msgid_plural "%s places"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-ctgen-attachment-summary.php:411
+msgid "content"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:412
+msgid "gallery"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:413
+msgid "featured image"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:414
+msgid "product gallery"
+msgstr ""
+
+#. translators: %s: page builder name.
+#: includes/class-ctgen-attachment-summary.php:416
+#, php-format
+msgid "%s data"
+msgstr ""
+
+#. translators: %s: custom field name.
+#: includes/class-ctgen-attachment-summary.php:418
+#, php-format
+msgid "custom field \"%s\""
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:434
+msgid "Site icon"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:435
+msgid "Theme logo"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:436
+msgid "Theme header image"
+msgstr ""
+
+#. translators: %s: option name, e.g. widget_media_image.
+#: includes/class-ctgen-attachment-summary.php:438
+#, php-format
+msgid "Widget settings (%s)"
+msgstr ""
+
+#. translators: %s: theme folder name.
+#: includes/class-ctgen-attachment-summary.php:440
+#, php-format
+msgid "Theme settings (%s)"
+msgstr ""
+
+#. translators: %s: option name.
+#: includes/class-ctgen-attachment-summary.php:442
+#, php-format
+msgid "Site option \"%s\""
+msgstr ""
+
+#. translators: %d: post ID.
+#: includes/class-ctgen-attachment-summary.php:453
+#, php-format
+msgid "Item #%d (no longer exists)"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:577
+msgid "Main file"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:579
+msgid "Original upload"
+msgstr ""
+
+#. translators: 1: size name, 2: width, 3: height.
+#: includes/class-ctgen-attachment-summary.php:587
+#, php-format
+msgid "%1$s (%2$s x %3$s)"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:639
+msgid "Already WebP"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:643
+msgid "GIF - not converted"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:647
+msgid "Not convertible"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:671
+msgid "not created yet"
+msgstr ""
+
+#. translators: %s: image title.
+#: includes/class-ctgen-attachment-summary.php:679
+#, php-format
+msgid "Regenerate WebP copies of \"%s\""
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:680
+msgid "Regenerate WebP"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:686
+msgid "No WebP copies yet"
+msgstr ""
+
+#. translators: 1: files with a WebP copy, 2: total files.
+#: includes/class-ctgen-attachment-summary.php:696
+#, php-format
+msgid "(%1$s of %2$s files)"
+msgstr ""
+
+#. translators: 1: compression ratio, e.g. "3.4", 2: percentage smaller.
+#: includes/class-ctgen-attachment-summary.php:705
+#, php-format
+msgid "Compression %1$s : 1 (%2$s%% smaller)"
+msgstr ""
+
+#. translators: 1: percentage of the original size, 2: space that could be saved.
+#: includes/class-ctgen-attachment-summary.php:707
+#, php-format
+msgid "WebP copies use %1$s%% of the original size; %2$s could be saved."
+msgstr ""
+
+#. translators: %s: space that could be saved.
+#: includes/class-ctgen-attachment-summary.php:709
+#, php-format
+msgid "Could save %s"
+msgstr ""
+
+#: includes/class-ctgen-attachment-summary.php:711
+msgid "WebP is not smaller than the original - no saving"
+msgstr ""
+
+#: includes/class-ctgen-functions.php:48
+msgid "Default Thumbnails"
+msgstr ""
+
+#: includes/class-ctgen-functions.php:53
+#: templates/ctgen-custom-thumb-list-html.php:19
+msgid "Name"
+msgstr ""
+
+#: includes/class-ctgen-functions.php:54
+#: templates/ctgen-custom-thumb-list-html.php:20
+#: templates/ctgen-form-html.php:22
+msgid "Width"
+msgstr ""
+
+#: includes/class-ctgen-functions.php:55
+#: templates/ctgen-custom-thumb-list-html.php:21
+#: templates/ctgen-form-html.php:28
+msgid "Height"
+msgstr ""
+
+#: includes/class-ctgen-functions.php:56
+msgid "Source"
+msgstr ""
+
+#: includes/class-ctgen-functions.php:57
+#: templates/ctgen-custom-thumb-list-html.php:22
+msgid "Crop"
+msgstr ""
+
+#: includes/class-ctgen-functions.php:58
+#: templates/ctgen-custom-thumb-list-html.php:23
+msgid "Action"
+msgstr ""
+
+#: includes/class-ctgen-functions.php:105
+msgid "The plugin registers and integrates all defined custom thumbnail sizes into the WordPress environment. They remain globally accessible and functional, providing a consistent image handling system that persists across all themes. In addition to that, it offers thumbnail regeneration capability as well."
+msgstr ""
+
+#. translators: %s: image size name, e.g. "thumbnail".
+#: includes/class-ctgen-functions.php:126
+#, php-format
+msgid "Convert %s thumbnails to WebP"
+msgstr ""
+
+#: includes/class-ctgen-functions.php:128
+msgid "WebP"
+msgstr ""
+
+#: includes/class-ctgen-usage-scanner.php:72
+#: webp/class-ctgen-webp-ajax-handlers.php:255
+msgid "The specified item is not an image attachment."
+msgstr ""
+
+#: includes/init.php:211
+msgid "Finding images to convert..."
+msgstr ""
+
+#. translators: %s: image size name, e.g. "thumbnail".
+#: includes/init.php:213
+#, php-format
+msgid "Finding images to convert for the %s size..."
+msgstr ""
+
+#: includes/init.php:214
+msgid "Converting..."
+msgstr ""
+
+#: includes/init.php:215
+msgid "No JPEG or PNG images found. Nothing to convert."
+msgstr ""
+
+#. translators: 1: number of images processed so far, 2: total number of images.
+#: includes/init.php:217
+#, php-format
+msgid "Processing image %1$s of %2$s..."
+msgstr ""
+
+#. translators: 1: percentage complete, 2: number of images processed, 3: total number of images.
+#: includes/init.php:219
+#, php-format
+msgid "%1$s%% done: %2$s of %3$s images processed."
+msgstr ""
+
+#. translators: 1: files converted, 2: files that already had a current WebP copy, 3: skipped files, 4: failed files.
+#: includes/init.php:221
+#, php-format
+msgid "Image files - converted: %1$s, already WebP: %2$s, skipped: %3$s, failed: %4$s."
+msgstr ""
+
+#. translators: %s: number of images that could not be processed at all.
+#: includes/init.php:223
+#, php-format
+msgid "Images that could not be processed: %s."
+msgstr ""
+
+#. translators: 1: number of images processed, 2: total number of images.
+#: includes/init.php:225
+#, php-format
+msgid "WebP conversion complete: %1$s of %2$s images processed."
+msgstr ""
+
+#. translators: 1: number of images processed, 2: total number of images.
+#: includes/init.php:227
+#, php-format
+msgid "WebP conversion finished with errors: %1$s of %2$s images processed. See the list below."
+msgstr ""
+
+#. translators: 1: number of images processed, 2: total number of images, 3: reason.
+#: includes/init.php:229
+#, php-format
+msgid "WebP conversion stopped after %1$s of %2$s images: %3$s"
+msgstr ""
+
+#. translators: %s: reason.
+#: includes/init.php:231
+#, php-format
+msgid "WebP conversion could not start: %s"
+msgstr ""
+
+#. translators: 1: attachment ID, 2: image size name, 3: error message.
+#: includes/init.php:239
+#, php-format
+msgid "Image ID %1$s, size %2$s: %3$s"
+msgstr ""
+
+#: includes/settings-page.php:38
+#: includes/settings-page.php:39
+msgid "Attachment Summary"
+msgstr ""
+
+#: templates/ctgen-custom-thumb-list-html.php:14
+msgid "Custom Thumbnails"
+msgstr ""
+
+#: templates/ctgen-custom-thumb-list-html.php:37
+msgid "Regenerate"
+msgstr ""
+
+#: templates/ctgen-custom-thumb-list-html.php:45
+msgid "Remove"
+msgstr ""
+
+#: templates/ctgen-custom-thumb-list-html.php:61
+msgid "You don't have any custom thumbnail sizes yet!"
+msgstr ""
+
+#: templates/ctgen-custom-thumb-list-html.php:62
+msgid "CREATE NOW"
+msgstr ""
+
+#: templates/ctgen-custom-thumb-list-html.php:63
+msgid "They will remain accessible across the website even you switch the theme."
+msgstr ""
+
+#: templates/ctgen-form-html.php:17
+msgid "Add New Thumbnail Size"
+msgstr ""
+
+#: templates/ctgen-form-html.php:37
+msgid "Allow Crop"
+msgstr ""
+
+#: templates/ctgen-form-html.php:43
+msgid "Add Thumbnail Size"
+msgstr ""
+
+#: templates/ctgen-form-html.php:54
+msgid "Hit the button below to (re)generate all thumbnails."
+msgstr ""
+
+#: templates/ctgen-form-html.php:56
+msgid "Regenerate Thumbnails"
+msgstr ""
+
+#: templates/ctgen-form-html.php:58
+msgid "For a specific thumbnail size, hit the associated recycle button "
+msgstr ""
+
+#: templates/ctgen-form-html.php:58
+msgid " in the table."
+msgstr ""
+
+#: templates/ctgen-form-html.php:68
+msgid "Create WebP copies of existing JPEG and PNG images: the full-size image and all of its thumbnails. Original images and thumbnails are not changed."
+msgstr ""
+
+#: templates/ctgen-form-html.php:70
+msgid "Convert All Thumbnails to WebP"
+msgstr ""
+
+#: templates/ctgen-form-html.php:72
+msgid "For a specific thumbnail size, use the WebP button in its table row."
+msgstr ""
+
+#: templates/ctgen-form-html.php:73
+msgid "WebP conversion progress"
+msgstr ""
+
+#: templates/ctgen-form-html.php:82
+msgid "WebP conversion:"
+msgstr ""
+
+#: templates/ctgen-form-html.php:82
+msgid "Animated GIFs are not convertible to WebP without losing their animation, so GIF images are not converted. JPEG and PNG images are converted."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:157
+msgid "The conversion scope must be either \"all_sizes\" or \"size\"."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:231
+msgid "This image has no such file to convert."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:248
+msgid "No valid attachment was specified."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:271
+msgid "Only JPEG and PNG images can be converted to WebP."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:292
+#: webp/class-ctgen-webp-ajax-handlers.php:309
+msgid "This attachment has no thumbnail metadata to convert."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:370
+msgid "A thumbnail size must be specified for a single-size conversion."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:379
+msgid "The requested thumbnail size is not a registered size."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:618
+msgid "The source thumbnail file could not be found."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:619
+msgid "The source thumbnail file could not be read."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:620
+msgid "The source thumbnail file appears to be corrupt."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:621
+msgid "This thumbnail is not in a supported format."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:622
+#: webp/class-ctgen-webp-converter.php:161
+msgid "GIF images are not converted to WebP. Animated GIFs would lose their animation, so all GIF files are skipped."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:623
+msgid "Another image in the same folder has the same name with a different extension, so both WebP copies would get the same file name. Nothing was written for this image."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:624
+msgid "A Media Library file already uses this WebP file name. It was left untouched."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:625
+msgid "The WebP file could not be written to its destination."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:626
+msgid "No image editor is available to process this thumbnail."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:627
+msgid "This server cannot produce WebP output."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:628
+msgid "The WebP file could not be saved."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:629
+msgid "The conversion did not produce a valid WebP file."
+msgstr ""
+
+#: webp/class-ctgen-webp-ajax-handlers.php:634
+msgid "The thumbnail could not be converted."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:88
+msgid "No WordPress image editor is able to load this file."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:96
+msgid "The active WordPress image editor cannot produce WebP output on this server."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:128
+msgid "No source file path was supplied."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:135
+msgid "The source file does not exist."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:143
+msgid "The source file exists but cannot be read."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:153
+msgid "The source file is not a readable image; it may be corrupt or truncated."
+msgstr ""
+
+#. translators: %s: the detected MIME type of the rejected file.
+#: webp/class-ctgen-webp-converter.php:170
+#, php-format
+msgid "Unsupported source type \"%s\". Only JPEG and PNG are supported."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:194
+msgid "No destination path was supplied."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:201
+msgid "The destination path must end in .webp."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:212
+msgid "The destination directory does not exist or is not writable."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:223
+msgid "The destination cannot be the same file as the source."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:254
+msgid "The image editor failed to write the WebP file."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:285
+msgid "The generated WebP file could not be moved into place."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:311
+msgid "The conversion produced an empty file."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:320
+msgid "The conversion did not produce a valid, readable WebP file."
+msgstr ""
+
+#: webp/class-ctgen-webp-converter.php:327
+msgid "The conversion produced a WebP file with invalid dimensions."
+msgstr ""
