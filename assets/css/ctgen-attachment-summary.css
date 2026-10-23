@@ -49,7 +49,7 @@
 	color: #8a2424;
 }
 
-/* Column widths: narrow Type so Attachment (the widest content) sits further left. */
+/* Column widths (sum 100%): Image 18, Type 9, Attachment 22, Current size 18, WebP status 33. */
 .ctgen-attachment-summary .column-image {
 	width: 18%;
 }
@@ -59,12 +59,15 @@
 }
 
 .ctgen-attachment-summary .column-attachment {
-	width: 37%;
+	width: 22%;
 }
 
-.ctgen-attachment-summary .column-size,
-.ctgen-attachment-summary .column-status {
+.ctgen-attachment-summary .column-size {
 	width: 18%;
+}
+
+.ctgen-attachment-summary .column-status {
+	width: 33%;
 }
 
 .ctgen-image-cell {
