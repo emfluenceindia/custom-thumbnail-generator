@@ -45,6 +45,7 @@ class CTGEN_Attachment_Summary {
 
 		add_action( 'wp_ajax_ctgen_usage_get_ids', array( $this, 'ajax_get_ids' ) );
 		add_action( 'wp_ajax_ctgen_usage_scan', array( $this, 'ajax_scan' ) );
+		add_action( 'wp_ajax_ctgen_summary_regenerate_webp', array( $this, 'ajax_regenerate_webp' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_filter( 'set_screen_option_' . self::PER_PAGE_OPTION, array( $this, 'save_per_page' ), 10, 3 );
 	}
@@ -140,6 +141,13 @@ class CTGEN_Attachment_Summary {
 					'rowError'   => __( 'The scan failed: %s', 'custom-thumbnail-generator' ),
 					/* translators: %s: number of further errors not listed. */
 					'more'       => __( '...and %s more.', 'custom-thumbnail-generator' ),
+					'regenBusy'  => __( 'Regenerating...', 'custom-thumbnail-generator' ),
+					/* translators: %s: number of files. */
+					'regenDone'  => __( 'WebP regenerated for %s files.', 'custom-thumbnail-generator' ),
+					/* translators: 1: files regenerated, 2: files that failed. */
+					'regenSome'  => __( 'WebP regenerated for %1$s files; %2$s failed.', 'custom-thumbnail-generator' ),
+					/* translators: %s: error message. */
+					'regenError' => __( 'WebP could not be regenerated: %s', 'custom-thumbnail-generator' ),
 				),
 			)
 		);
@@ -454,5 +462,169 @@ class CTGEN_Attachment_Summary {
 		$name = $link ? '<a href="' . esc_url( $link ) . '">' . esc_html( $title ) . '</a>' : esc_html( $title );
 
 		return $name . ' <span class="ctgen-usage-meta">(' . esc_html( implode( ', ', $details ) ) . ') - ' . esc_html( implode( ', ', $sources ) ) . '</span>';
+	}
+
+	/**
+	 * AJAX: re-creates the WebP copies of one image (every size, the main file
+	 * and, for scaled uploads, the original upload) and returns the refreshed
+	 * WebP status cell.
+	 *
+	 * @return void
+	 */
+	public function ajax_regenerate_webp() {
+		check_ajax_referer( 'ctgen_media_actions', 'security' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not authorized to perform this action!', 'custom-thumbnail-generator' ) );
+		}
+
+		$id     = isset( $_POST['id'] ) ? absint( wp_unslash( $_POST['id'] ) ) : 0;
+		$result = ctgen_webp_handlers()->convert_attachment( $id, 'all_sizes', '', true );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => $result->get_error_code(),
+					'message' => $result->get_error_message(),
+				)
+			);
+		}
+
+		$errors = array();
+		foreach ( $result['sizes'] as $size => $outcome ) {
+			if ( 'failed' === $outcome['outcome'] ) {
+				$errors[] = $size . ': ' . $outcome['message'];
+			}
+		}
+
+		wp_send_json_success(
+			array(
+				'counts' => $result['counts'],
+				'errors' => $errors,
+				'html'   => self::render_webp_cell( $id ),
+			)
+		);
+	}
+
+	/**
+	 * Absolute paths of the attachment's files on disk: the attached file, the
+	 * original upload (for scaled images) and every generated size.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return string[]
+	 */
+	public static function attachment_files( $attachment_id ) {
+		$attached = get_attached_file( $attachment_id );
+
+		if ( ! $attached ) {
+			return array();
+		}
+
+		$dir   = trailingslashit( dirname( $attached ) );
+		$meta  = wp_get_attachment_metadata( $attachment_id );
+		$files = array( $attached );
+
+		if ( is_array( $meta ) ) {
+			if ( ! empty( $meta['original_image'] ) && is_string( $meta['original_image'] ) ) {
+				$files[] = $dir . wp_basename( $meta['original_image'] );
+			}
+			foreach ( isset( $meta['sizes'] ) && is_array( $meta['sizes'] ) ? $meta['sizes'] : array() as $size ) {
+				if ( ! empty( $size['file'] ) && is_string( $size['file'] ) ) {
+					$files[] = $dir . wp_basename( $size['file'] );
+				}
+			}
+		}
+
+		return array_values( array_unique( $files ) );
+	}
+
+	/**
+	 * HTML of the "WebP status" cell (escaped): WebP copy sizes, compression
+	 * ratio, a savings bar and the "Regenerate WebP" button.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return string
+	 */
+	public static function render_webp_cell( $attachment_id ) {
+		$attachment_id = (int) $attachment_id;
+		$mime          = (string) get_post_mime_type( $attachment_id );
+
+		if ( 'image/webp' === $mime ) {
+			return '<div class="ctgen-webp-cell" id="ctgen-webp-cell-' . $attachment_id . '">' . esc_html__( 'Already WebP', 'custom-thumbnail-generator' ) . '</div>';
+		}
+
+		if ( 'image/gif' === $mime ) {
+			return '<div class="ctgen-webp-cell" id="ctgen-webp-cell-' . $attachment_id . '">' . esc_html__( 'GIF - not converted', 'custom-thumbnail-generator' ) . '</div>';
+		}
+
+		if ( ! in_array( $mime, CTGEN_Webp_Converter::ALLOWED_SOURCE_MIME_TYPES, true ) ) {
+			return '<div class="ctgen-webp-cell" id="ctgen-webp-cell-' . $attachment_id . '">' . esc_html__( 'Not convertible', 'custom-thumbnail-generator' ) . '</div>';
+		}
+
+		$sources      = 0;
+		$copies       = 0;
+		$webp_bytes   = 0;
+		$source_bytes = 0; // Originals of the files that have a WebP copy.
+		$items        = '';
+
+		foreach ( self::attachment_files( $attachment_id ) as $path ) {
+			if ( ! file_exists( $path ) ) {
+				continue;
+			}
+
+			++$sources;
+			$webp = trailingslashit( dirname( $path ) ) . pathinfo( $path, PATHINFO_FILENAME ) . '.webp';
+
+			if ( file_exists( $webp ) ) {
+				$size          = (int) filesize( $webp );
+				$webp_bytes   += $size;
+				$source_bytes += (int) filesize( $path );
+				++$copies;
+				$items .= '<li>' . esc_html( wp_basename( $webp ) . ' - ' . size_format( $size, 1 ) ) . '</li>';
+			} else {
+				$items .= '<li>' . esc_html( wp_basename( $webp ) . ' - ' . __( 'not created yet', 'custom-thumbnail-generator' ) ) . '</li>';
+			}
+		}
+
+		$button = sprintf(
+			'<button type="button" class="button button-small ctgen-webp-regenerate" data-id="%1$d" aria-label="%2$s">%3$s</button><span class="ctgen-webp-regenerate-status" role="status"></span>',
+			$attachment_id,
+			/* translators: %s: image title. */
+			esc_attr( sprintf( __( 'Regenerate WebP copies of "%s"', 'custom-thumbnail-generator' ), get_the_title( $attachment_id ) ) ),
+			esc_html__( 'Regenerate WebP', 'custom-thumbnail-generator' )
+		);
+
+		$open = '<div class="ctgen-webp-cell" id="ctgen-webp-cell-' . $attachment_id . '" data-webp="' . $copies . '" data-files="' . $sources . '" data-bytes="' . $webp_bytes . '" data-source-bytes="' . $source_bytes . '">';
+
+		if ( 0 === $copies ) {
+			return $open . '<span class="ctgen-webp-status">' . esc_html__( 'No WebP copies yet', 'custom-thumbnail-generator' ) . '</span>' . $button . '</div>';
+		}
+
+		/* translators: 1: total size, 2: number of files. */
+		$summary = sprintf( _n( '%1$s in %2$s file', '%1$s in %2$s files', $copies, 'custom-thumbnail-generator' ), size_format( $webp_bytes, 1 ), number_format_i18n( $copies ) );
+		$html    = $open . '<details class="ctgen-size-list ctgen-webp-status"><summary>' . esc_html( $summary ) . '</summary><ul>' . $items . '</ul></details>';
+
+		// Compression ratio and savings, over the files that have a WebP copy.
+		$based_on = $copies < $sources
+			/* translators: 1: files with a WebP copy, 2: total files. */
+			? ' ' . sprintf( __( '(%1$s of %2$s files)', 'custom-thumbnail-generator' ), number_format_i18n( $copies ), number_format_i18n( $sources ) )
+			: '';
+
+		if ( $webp_bytes > 0 && $source_bytes > $webp_bytes ) {
+			$percent = (int) round( 100 * ( $source_bytes - $webp_bytes ) / $source_bytes );
+			$ratio   = number_format_i18n( $source_bytes / $webp_bytes, 1 );
+			$kept    = max( 1, 100 - $percent );
+			$saved   = size_format( $source_bytes - $webp_bytes, 1 );
+			/* translators: 1: compression ratio, e.g. "3.4", 2: percentage smaller. */
+			$html .= '<div class="ctgen-webp-ratio">' . esc_html( sprintf( __( 'Compression %1$s : 1 (%2$s%% smaller)', 'custom-thumbnail-generator' ), $ratio, $percent ) . $based_on ) . '</div>';
+			/* translators: 1: percentage of the original size, 2: space that could be saved. */
+			$label = sprintf( __( 'WebP copies use %1$s%% of the original size; %2$s could be saved.', 'custom-thumbnail-generator' ), $kept, $saved );
+			/* translators: %s: space that could be saved. */
+			$html .= '<div class="ctgen-webp-saving" role="img" aria-label="' . esc_attr( $label ) . '"><span class="ctgen-webp-saving-bar"><span class="ctgen-webp-saving-used" style="width:' . $kept . '%"></span></span><span class="ctgen-webp-saving-label" aria-hidden="true">' . esc_html( sprintf( __( 'Could save %s', 'custom-thumbnail-generator' ), $saved ) ) . '</span></div>';
+		} else {
+			$html .= '<div class="ctgen-webp-ratio ctgen-webp-larger">' . esc_html( __( 'WebP is not smaller than the original - no saving', 'custom-thumbnail-generator' ) . $based_on ) . '</div>';
+		}
+
+		return $html . $button . '</div>';
 	}
 }

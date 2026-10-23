@@ -456,6 +456,53 @@
 			} );
 	}
 
+	/* ---------------------------------------------------- regenerate WebP */
+
+	/**
+	 * Re-creates the WebP copies of one image and swaps in the refreshed cell.
+	 *
+	 * @param {HTMLElement} button The clicked "Regenerate WebP" button.
+	 */
+	function regenerateWebp( button ) {
+		var $button = $( button );
+		var id = parseInt( $button.attr( 'data-id' ), 10 );
+		var $cell = $button.closest( '.ctgen-webp-cell' );
+		var label = $button.text();
+		var $status = $cell.find( '.ctgen-webp-regenerate-status' );
+
+		if ( ! id || $button.prop( 'disabled' ) ) {
+			return;
+		}
+
+		$button.prop( 'disabled', true ).text( i18n.regenBusy );
+		$status.text( '' );
+
+		request( { action: 'ctgen_summary_regenerate_webp', id: id } )
+			.done( function ( response ) {
+				var data = response && response.data;
+				var $new;
+				var converted;
+				var failed;
+
+				if ( response && true === response.success && data && 'string' === typeof data.html && data.counts && $.isArray( data.errors ) ) {
+					$new = $( $.parseHTML( data.html ) );
+					$cell.replaceWith( $new );
+					converted = parseInt( data.counts.converted, 10 ) || 0;
+					failed = parseInt( data.counts.failed, 10 ) || 0;
+					$new.find( '.ctgen-webp-regenerate-status' ).text( failed ? format( i18n.regenSome, converted, failed ) + ' ' + data.errors.join( '; ' ) : format( i18n.regenDone, converted ) );
+					$new.find( '.ctgen-webp-regenerate' ).trigger( 'focus' );
+					return;
+				}
+
+				$button.prop( 'disabled', false ).text( label );
+				$status.text( format( i18n.regenError, data && data.message ? data.message : i18n.malformed ) );
+			} )
+			.fail( function ( xhr, textStatus ) {
+				$button.prop( 'disabled', false ).text( label );
+				$status.text( format( i18n.regenError, isAuthFailure( xhr ) ? i18n.auth : failureReason( xhr, textStatus ) ) );
+			} );
+	}
+
 	/* -------------------------------------------------------- image viewer */
 
 	var viewer = {};
@@ -548,6 +595,12 @@
 		ui.fresh.on( 'click', function ( event ) {
 			event.preventDefault();
 			start( true, this );
+		} );
+
+		// Delegated: WebP cells are replaced after every regeneration.
+		$( document ).on( 'click', '.ctgen-webp-regenerate', function ( event ) {
+			event.preventDefault();
+			regenerateWebp( this );
 		} );
 
 		// Delegated: cells are replaced after every scan.

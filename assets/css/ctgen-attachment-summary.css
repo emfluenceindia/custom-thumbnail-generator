@@ -232,3 +232,48 @@ body.ctgen-image-viewer-open {
 		animation: none;
 	}
 }
+
+/* WebP status: compression ratio, savings bar, regenerate button. */
+.ctgen-webp-ratio {
+	margin-top: 4px;
+	font-size: 12px;
+	color: #1d2327;
+}
+
+.ctgen-webp-ratio.ctgen-webp-larger {
+	color: #8a2424;
+}
+
+.ctgen-webp-saving {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 4px;
+	font-size: 12px;
+	color: #646970;
+}
+
+.ctgen-webp-saving-bar {
+	position: relative;
+	flex: 0 0 90px;
+	height: 8px;
+	border-radius: 4px;
+	background: #b8e6bf; /* Space that could be saved. */
+	overflow: hidden;
+}
+
+.ctgen-webp-saving-used {
+	display: block;
+	height: 100%;
+	background: #2271b1; /* Size of the WebP copies, relative to the originals. */
+}
+
+.ctgen-webp-cell .ctgen-webp-regenerate {
+	margin-top: 6px;
+}
+
+.ctgen-webp-regenerate-status {
+	display: block;
+	font-size: 12px;
+	color: #646970;
+}

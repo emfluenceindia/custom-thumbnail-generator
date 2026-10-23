@@ -353,28 +353,7 @@ class CTGEN_Attachment_Summary_Table extends WP_List_Table {
 	 * @return string[]
 	 */
 	private function attachment_files( $attachment_id ) {
-		$attached = get_attached_file( $attachment_id );
-
-		if ( ! $attached ) {
-			return array();
-		}
-
-		$dir   = trailingslashit( dirname( $attached ) );
-		$meta  = wp_get_attachment_metadata( $attachment_id );
-		$files = array( $attached );
-
-		if ( is_array( $meta ) ) {
-			if ( ! empty( $meta['original_image'] ) && is_string( $meta['original_image'] ) ) {
-				$files[] = $dir . wp_basename( $meta['original_image'] );
-			}
-			foreach ( isset( $meta['sizes'] ) && is_array( $meta['sizes'] ) ? $meta['sizes'] : array() as $size ) {
-				if ( ! empty( $size['file'] ) && is_string( $size['file'] ) ) {
-					$files[] = $dir . wp_basename( $size['file'] );
-				}
-			}
-		}
-
-		return array_values( array_unique( $files ) );
+		return CTGEN_Attachment_Summary::attachment_files( $attachment_id );
 	}
 
 	/**
@@ -417,48 +396,6 @@ class CTGEN_Attachment_Summary_Table extends WP_List_Table {
 	 * @return string
 	 */
 	protected function column_status( $item ) {
-		if ( 'image/webp' === $item->post_mime_type ) {
-			return esc_html__( 'Already WebP', 'custom-thumbnail-generator' );
-		}
-
-		if ( 'image/gif' === $item->post_mime_type ) {
-			return esc_html__( 'GIF - not converted', 'custom-thumbnail-generator' );
-		}
-
-		if ( ! in_array( $item->post_mime_type, CTGEN_Webp_Converter::ALLOWED_SOURCE_MIME_TYPES, true ) ) {
-			return esc_html__( 'Not convertible', 'custom-thumbnail-generator' );
-		}
-
-		$sources = 0;
-		$copies  = 0;
-		$bytes   = 0;
-		$items   = '';
-
-		foreach ( $this->attachment_files( $item->ID ) as $path ) {
-			if ( ! file_exists( $path ) ) {
-				continue;
-			}
-
-			++$sources;
-			$webp = trailingslashit( dirname( $path ) ) . pathinfo( $path, PATHINFO_FILENAME ) . '.webp';
-
-			if ( file_exists( $webp ) ) {
-				$size   = (int) filesize( $webp );
-				$bytes += $size;
-				++$copies;
-				$items .= '<li>' . esc_html( wp_basename( $webp ) . ' - ' . size_format( $size, 1 ) ) . '</li>';
-			} else {
-				$items .= '<li>' . esc_html( wp_basename( $webp ) . ' - ' . __( 'not created yet', 'custom-thumbnail-generator' ) ) . '</li>';
-			}
-		}
-
-		if ( 0 === $copies ) {
-			return '<span class="ctgen-webp-status" data-webp="0" data-files="' . (int) $sources . '">' . esc_html__( 'No WebP copies yet', 'custom-thumbnail-generator' ) . '</span>';
-		}
-
-		/* translators: 1: total size, 2: number of files. */
-		$summary = sprintf( _n( '%1$s in %2$s file', '%1$s in %2$s files', $copies, 'custom-thumbnail-generator' ), size_format( $bytes, 1 ), number_format_i18n( $copies ) );
-
-		return '<details class="ctgen-size-list ctgen-webp-status" data-webp="' . (int) $copies . '" data-files="' . (int) $sources . '" data-bytes="' . (int) $bytes . '"><summary>' . esc_html( $summary ) . '</summary><ul>' . $items . '</ul></details>';
+		return CTGEN_Attachment_Summary::render_webp_cell( $item->ID );
 	}
 }

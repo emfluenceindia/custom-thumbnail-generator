@@ -49,6 +49,7 @@ Go to **Custom Thumbnail Generator > Attachment Summary** for a table of every i
     * The usage of the images shown on the page is refreshed automatically in the background every time the page loads, and the refresh icon next to an image's Attachment label rescans that image. To filter or sort by usage across all pages, click **Scan all images** (or **Scan images not scanned yet**); images are scanned ten at a time with a progress bar.  
     * The scan looks at the content of posts, pages and other post types, custom fields (including page builder data such as Elementor), featured images, galleries, WooCommerce product galleries, widgets, theme settings, the site icon and the logo. It recognises every size of an image, its scaled and edited versions and its WebP copies.  
     * Images used only in theme files, CSS or on other websites cannot be detected, so "No usage found" does not prove that an image is unused. Revisions and automatic drafts are not counted.  
+    * For JPEG and PNG images the WebP status shows the size of the WebP copies, the compression ratio compared with the original files, a bar with the disk space that could be saved, and a **Regenerate WebP** button that re-creates the WebP copies of the main file and every size (original files are never changed).  
     * Scanning only reads your content. The only data it stores is the scan result on each image, which is removed when the plugin is deleted.  
     * Scanning time grows with the size of the site: on a test site with 1,262 posts it took about 0.15 seconds per image.  
 

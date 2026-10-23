@@ -132,6 +132,8 @@ class CTGEN_Webp_Ajax_Handlers {
 	 * @param int    $attachment_id Attachment post ID.
 	 * @param string $scope         Either 'all_sizes' or 'size'.
 	 * @param string $size_slug     Required registered size slug when $scope is 'size'; ignored otherwise.
+	 * @param bool   $force         Re-create WebP copies even when a current one exists (still never
+	 *                              overwrites another attachment's file or a name-clashing image).
 	 * @return array|WP_Error {
 	 *     Array on success (even if individual sizes failed/were skipped), WP_Error only when the
 	 *     request itself is invalid (bad attachment, bad scope, bad slug).
@@ -142,7 +144,7 @@ class CTGEN_Webp_Ajax_Handlers {
 	 *     @type array $counts        {converted, already_current, skipped, failed} counts across $sizes.
 	 * }
 	 */
-	public function convert_attachment( $attachment_id, $scope, $size_slug ) {
+	public function convert_attachment( $attachment_id, $scope, $size_slug, $force = false ) {
 		if ( $attachment_id <= 0 ) {
 			return new WP_Error(
 				'ctgen_webp_invalid_attachment',
@@ -232,7 +234,7 @@ class CTGEN_Webp_Ajax_Handlers {
 					'message' => $this->safe_error_message( 'ctgen_webp_name_conflict' ),
 				);
 			} else {
-				$outcome = $this->process_file( $entry, $thumbnail_dir, $attachment_id );
+				$outcome = $this->process_file( $entry, $thumbnail_dir, $attachment_id, $force );
 			}
 
 			$sizes[ $slug ] = $outcome;
@@ -388,6 +390,7 @@ class CTGEN_Webp_Ajax_Handlers {
 	 * @param array  $entry         {file, width, height} of the source file; width/height may be 0 (read from the file).
 	 * @param string $thumbnail_dir Absolute, trailing-slashed directory containing the attachment's files.
 	 * @param int    $attachment_id Attachment ID (another attachment's file is never overwritten).
+	 * @param bool   $force         Skip the "already current" check and convert again.
 	 * @return array {
 	 *     @type string $outcome One of 'converted', 'already_current', 'skipped', 'failed'.
 	 *     @type int    $width   Present when outcome is 'converted' or 'already_current'.
@@ -398,7 +401,7 @@ class CTGEN_Webp_Ajax_Handlers {
 	 *     @type string $message Present when outcome is 'failed'.
 	 * }
 	 */
-	private function process_file( $entry, $thumbnail_dir, $attachment_id ) {
+	private function process_file( $entry, $thumbnail_dir, $attachment_id, $force = false ) {
 		if ( empty( $entry['file'] ) || ! is_string( $entry['file'] ) ) {
 			return array(
 				'outcome' => 'skipped',
@@ -441,7 +444,7 @@ class CTGEN_Webp_Ajax_Handlers {
 			}
 		}
 
-		$already_current = $this->verify_existing_webp( $destination_path, $entry );
+		$already_current = $force ? false : $this->verify_existing_webp( $destination_path, $entry );
 
 		if ( false !== $already_current ) {
 			return array(

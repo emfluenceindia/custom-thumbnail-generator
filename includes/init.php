@@ -94,7 +94,22 @@ require_once CTGEN_PLUGIN_PATH . 'class-ctgen-functions.php';
 
 require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-converter.php';
 require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-ajax-handlers.php';
-new CTGEN_Webp_Ajax_Handlers();
+ctgen_webp_handlers();
+
+/**
+ * The WebP conversion handlers (one instance per request; also used by the Attachment Summary page).
+ *
+ * @return CTGEN_Webp_Ajax_Handlers
+ */
+function ctgen_webp_handlers() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Ajax_Handlers();
+	}
+
+	return $instance;
+}
 
 require_once CTGEN_PLUGIN_PATH . 'class-ctgen-usage-scanner.php';
 require_once CTGEN_PLUGIN_PATH . 'class-ctgen-attachment-summary.php';
