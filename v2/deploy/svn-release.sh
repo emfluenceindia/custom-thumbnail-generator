@@ -74,6 +74,8 @@ SLUG="$(basename "$SRC")"
 [ -n "$VERSION" ] || die "no 'Version:' header in $(basename "$MAIN_FILE")."
 [[ "$VERSION" =~ ^[0-9A-Za-z.+-]+$ ]] || die "unexpected version string: '$VERSION'."
 [ "$VERSION" = "$STABLE_TAG" ] || die "Version ($VERSION) in $(basename "$MAIN_FILE") does not match Stable tag ($STABLE_TAG) in readme.txt."
+CONST_VERSION="$(sed -n -E "s/.*define\( *'CTGEN_PLUGIN_VERSION', *'([^']+)' *\).*/\1/p" "$MAIN_FILE" | head -n1)"
+[ "$VERSION" = "$CONST_VERSION" ] || die "Version ($VERSION) in $(basename "$MAIN_FILE") does not match CTGEN_PLUGIN_VERSION ('$CONST_VERSION')."
 
 # ----------------------------------------------------------------- svn root
 mkdir -p "${POSITIONAL[1]}" 2>/dev/null || [ "$DRY_RUN" -eq 1 ] || die "cannot create ${POSITIONAL[1]}"
@@ -105,7 +107,7 @@ FILES="$(rsync -a --dry-run --out-format='%n' "${RSYNC_FILTER[@]}" "$SRC/" "$EMP
 [ -n "$FILES" ] || die "no files selected - check .distignore."
 COUNT="$(printf '%s\n' "$FILES" | wc -l | tr -d ' ')"
 
-BAD="$(printf '%s\n' "$FILES" | grep -E '(^|/)\.|\.bak$|^v2/|(^|/)node_modules/|\.sql$|\.log$|:Zone\.Identifier$' || true)"
+BAD="$(printf '%s\n' "$FILES" | grep -E '(^|/)\.|\.bak[0-9]*$|^v2/|(^|/)node_modules/|\.sql$|\.log$|:Zone\.Identifier$' || true)"
 [ -z "$BAD" ] || die "these files must not be released - add them to .distignore:
 $BAD"
 printf '%s\n' "$FILES" | grep -qx "$(basename "$MAIN_FILE")" || die "main plugin file missing from the release list."

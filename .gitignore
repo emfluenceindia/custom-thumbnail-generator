@@ -11,6 +11,7 @@
 
 # Dependency and build tooling
 /node_modules/
+/v2/tools/node_modules/
 /vendor/
 composer.json
 composer.lock

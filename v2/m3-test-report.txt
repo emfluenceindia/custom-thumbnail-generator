@@ -1,0 +1,160 @@
+MILESTONE 3 - CONVERSION CONTROLS AND LIVE PROGRESS - REPORT (2026-10-22)
+==========================================================================
+
+1. VERDICT
+----------
+Complete. All 22 items pass. Item 5 passes with one stated visual caveat
+(see 4.1). Baseline for "before M3" = git commit 4ee641c ("B4 m3").
+Not committed to git.
+
+
+2. WHAT CHANGED
+---------------
+Settings page (user-visible):
+- New "Convert All Thumbnails to WebP" button (#ctgen-webp-convert-all) in a
+  new section below the regenerate controls, with its own progress bar
+  (#ctgen-webp-progressbar), current-image line, counts line, live status
+  (#ctgen-webp-status, role=status, aria-live=polite) and failure list.
+- The GIF notice moved into this new section.
+- Default sizes table: new "Action" column with a "WebP" button per row.
+- Custom sizes table: a "WebP" button after the regenerate/remove buttons.
+- Row buttons: class .ctgen-webp-convert-size, data-slug, accessible name
+  "Convert <size> thumbnails to WebP".
+
+Files:
+- includes/init.php: ctgen_enqueue_webp_scripts() - settings page only;
+  wp_localize_script('CTGENWebpConvert') with nonce + 18 translatable strings.
+- includes/class-ctgen-functions.php: Action column +
+  ctgen_render_webp_convert_button() (shared by both tables).
+- templates/ctgen-form-html.php: WebP section markup.
+- templates/ctgen-custom-thumb-list-html.php: WebP button per row.
+- NEW assets/js/ctgen-webp-convert.js (readable source)
+- NEW assets/js/ctgen-webp-convert.min.js (built from the source)
+- NEW assets/css/ctgen-webp-convert.css
+- The existing assets/js/ctgen-media-actions.min.js and
+  assets/css/ctgen-admin.min.css are untouched (byte-identical).
+
+Client behaviour:
+- Discovery request, then one request per image, sequential (100 ms gap).
+- Each response is validated (success flag, numeric counts that add up to
+  the number of sizes) before any counter moves.
+- Per-image server error (e.g. image deleted mid-run): counted, listed, run
+  continues. Malformed/network error: counted, listed, run continues;
+  3 in a row stop the run. 403 / "-1": stops at once (session expired).
+  Unknown/missing size: stops at once (would repeat for every image).
+- One run at a time: all WebP buttons disabled during a run, plus a run lock
+  that also stops programmatic clicks.
+- Live region updated only at start, 25/50/75 % and at the end.
+
+Dev tooling (v2/, not shipped):
+- v2/tools/package.json (pinned terser 5.49.0, playwright-core 1.48.2),
+  installed offline from the local npm cache.
+- v2/tools/build-js.js: builds the .min.js; --check fails on drift.
+- v2/tests/m3-browser.js, m3-legacy-ui.js, m3-fixtures.php.
+- .gitignore: added /v2/tools/node_modules/ (see 5).
+
+
+3. RESULTS (real admin page, headless Chromium 130 via Playwright)
+------------------------------------------------------------------
+ 1  PASS  Bulk button #ctgen-webp-convert-all "Convert All Thumbnails to
+          WebP" vs #ctgen-regenerate "Regenerate Thumbnails".
+ 2  PASS  Default table: new Action column; all 6 rows (thumbnail, medium,
+          medium_large, large, 1536x1536, 2048x2048) have a WebP button.
+ 3  PASS  Custom table row ctgen_250x250: regenerate + remove + WebP.
+ 4  PASS  Row click sends only the 2 WebP actions; no regenerate/remove
+          request; no confirm() dialog.
+ 5  PASS* Legacy script byte-identical (same sha256); bulk regenerate on 3
+          fixtures produced the identical sequence (Processing... ->
+          Processed 1 of 3 -> 33% ... -> Thumbnail generation complete! ->
+          reset); per-row regenerate and remove sequences identical;
+          computed CSS and exact box sizes of all legacy controls identical;
+          regenerate button and the regenerate panel pixel-identical.
+          *See 4.1.
+ 6  PASS  REAL empty library (attachment rows removed, DB restored,
+          CHECKSUM TABLE identical): "No JPEG or PNG images found. Nothing
+          to convert.", 0 convert requests, button re-enabled.
+ 7  PASS  Bulk run, 25 images: UI converted=51, already=21, skipped=1,
+          failed=1, images failed=1 - equal to the sum of the 25 raw
+          responses. Corrupt thumbnail -> size failed; fixture deleted after
+          discovery -> ctgen_webp_not_an_image; GIF never requested.
+ 8  PASS  Row "thumbnail": 25 requests, all scope=size&size=thumbnail.
+ 9  PASS  Double click + mid-run programmatic bulk and row clicks -> 1
+          discovery request, 25 convert requests, no ID twice.
+ 10 PASS  SIMULATED (request interception): malformed JSON on image 3 ->
+          finished with errors, all 24 processed; network loss from image 3
+          -> stopped after 5/24; 403 "-1" -> stopped after 1 with session
+          message; malformed discovery -> stopped, 0 requests. Controls
+          re-enabled every time.
+ 11 PASS  Missing thumbnail (image 23 of 25) -> skipped (source_missing);
+          the 2 later images were processed.
+ 12 PASS  Added 321x123 via the form; the reloaded row's WebP button worked
+          without page reload (24 requests, size=ctgen_321x123, all skipped:
+          no files for a new size).
+ 13 PASS  After remove + another full table re-render: 1 delegated handler,
+          next row click -> 1 run, no duplicates, no console errors.
+ 14 PASS  Keyboard only: Tab reaches the bulk button (Enter runs all sizes)
+          and a row button (Space runs that size); visible focus ring
+          (box-shadow 0 0 0 2px #3858e9); v2/tests/results/m3-focus-*.png.
+ 15 PASS  Accessibility tree: "Convert All Thumbnails to WebP" and
+          "Convert <size> thumbnails to WebP"; legacy names "Regenerate",
+          "Remove", "Regenerate Thumbnails" - no overlap.
+ 16 PASS  25-image run: live region changed 5 times (start, 25 %, 50 %,
+          75 %, final); per-image text is in a non-live element.
+ 17 PASS  Page loads ctgen-webp-convert.min.js?ver=1.0.2; served bytes =
+          built file; build-js.js --check confirms it is a fresh build of
+          the source; the source file itself is not loaded.
+ 18 PASS  All 17 i18n keys used by the JS are localized; no English string
+          literals in the JS (acorn scan); with every string replaced by a
+          marker the UI showed only markers, numbers, slugs and server
+          messages; wp i18n make-pot extracts all new strings (89 msgids).
+ 19 PASS  php -l clean on 9 plugin PHP files + 3 harness files.
+ 20 PASS  node --check on source and .min.js; build-js.js --check (no
+          drift). No linter exists in the project; none was invented.
+ 21 PASS  phpcs --standard=.phpcs.xml.dist (whole plugin) -> 0 findings.
+ 22 PASS  Plugin Check on the 30-file release build: "No errors found".
+          The git working copy additionally reports the dev-only
+          .gitignore, .distignore (hidden_files) and v2/deploy/svn-release.sh
+          (application_detected), all excluded from the release.
+
+After every run: uploads identical to the pre-work backup (generated .webp
+files removed), 25 attachments, option unchanged, temporary users deleted.
+M1 (20/20) and M2 (21/21) harnesses re-run on the M3 code: all pass.
+
+
+4. CAVEATS
+----------
+4.1  Item 5: the per-row regenerate button is not pixel-identical. Its CSS
+     and box size are identical, but the custom-table cell now centres three
+     buttons instead of two, so the button starts at a different sub-pixel
+     position and the recycle icon's anti-aliased edge differs (52 edge
+     pixels). The remove button is pixel-identical after a 1 px shift.
+     Side-by-side: v2/tests/results/m3-legacy/row-regen-side-by-side.png
+4.2  Item 5: per-row regenerate and remove used stubbed server responses
+     (the real ones rewrite all real media / the real option); their real
+     backend behaviour is covered by the M2 harness (item 22).
+4.3  Item 10 failures are simulated with Playwright request interception.
+4.4  Console errors in the run come only from the deliberately injected
+     failures (3 aborted requests, 2 x 403).
+
+
+4.5  Layout change after this report: the Default Thumbnails table now sits
+     under the Custom Thumbnails table in the right-hand column
+     (templates/ctgen-form-html.php wraps both in #ctgen-tables-column;
+     includes/settings-page.php no longer renders it separately; one CSS
+     rule aligns the right edges). Re-run afterwards: browser suite 17/17,
+     legacy UI capture identical to the previous M3 capture except the
+     script ?ver (1.0.2 -> 1.1, same sha256) and 7 anti-aliasing pixels
+     (max 3/255) on the Regenerate button border after a run; PHPCS 0;
+     Plugin Check on the release build: no errors.
+     Screenshot: v2/tests/results/settings-page-1366.png
+
+
+5. FOR YOU
+----------
+- .gitignore: I added "/v2/tools/node_modules/". Your existing patterns
+  "package.json" / "package-lock.json" (no leading slash) also ignore
+  v2/tools/package.json - anchor them ("/package.json") if you want the
+  tool versions tracked.
+- Version bumped to 1.1 after this report (plugin header, readme Stable tag,
+  changelog, upgrade notice); the assets now load with ?ver=1.1, so browsers
+  fetch the new JS/CSS. The .pot was regenerated (1.1, 88 strings).

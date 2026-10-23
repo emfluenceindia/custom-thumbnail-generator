@@ -1,0 +1,94 @@
+A1 - READ-ONLY INVENTORY AND USAGE SCAN - REPORT (2026-10-23)
+==============================================================
+Spec: v2/attachment-summary/a1.md. Not committed to git.
+Evidence: v2/tests/results/m4-final/ (a1.txt, a1-browser.txt, a1-perf.txt,
+summary.txt) from the final full run started 05:29 UTC, plus a final
+A1 browser run with a before/after database fingerprint.
+
+1. VERDICT
+----------
+Complete. All 8 gate items pass. Existing M1-M4 suites re-run on the same
+code: all pass.
+
+2. WHAT WAS BUILT
+-----------------
+Page: Custom Thumbnail Generator > Attachment Summary.
+- includes/class-ctgen-usage-scanner.php: read-only scanner. Finds an image
+  by file path (all sizes, -scaled, edited -e123 versions, WebP copies; plain
+  and JSON-escaped slashes) in post content, custom fields and options, and by
+  ID in wp-image-ID classes, block attributes, gallery shortcodes/blocks,
+  featured images, WooCommerce galleries, site icon, theme logo and header,
+  image/gallery/block widgets. Exact regex check after a LIKE prefilter.
+  Skips revisions, attachments, auto-drafts, changesets, transients.
+- includes/class-ctgen-attachment-summary.php: page, scan bar, AJAX
+  ctgen_usage_get_ids / ctgen_usage_scan (nonce + manage_options, IDs only,
+  1-25 per request), screen option, shared "Used in" cell.
+- includes/class-ctgen-attachment-summary-table.php: WP_List_Table with Image,
+  Type, Uploaded to, Used in, Current size, WebP status, Date; filters (type,
+  attached, usage), file-name search, sorting (title, type, parent, usage,
+  date), pagination with an "Images per page" screen option.
+- assets/js/ctgen-attachment-summary.js (+ .min.js built by v2/tools),
+  assets/css/ctgen-attachment-summary.css.
+- uninstall.php: removes _ctgen_usage, _ctgen_usage_count and the per-page
+  user setting; keeps custom sizes, images and WebP copies.
+- Wiring: includes/init.php, includes/settings-page.php. readme.txt and .pot
+  updated.
+Data written by A1: only the two post meta keys on scanned images.
+
+3. GATE RESULTS
+---------------
+1 PASS  Each reference type found with the right label: <img>, srcset only,
+        block id only, wp-image class only, gallery shortcode, gallery block,
+        featured image, Elementor JSON, custom-field URL, WooCommerce gallery,
+        image widget, block widget, site icon, theme logo, other option,
+        draft post.  [a1.txt item 1]
+2 PASS  No false positives: same name in another month folder, a name that
+        extends another (content2 vs content), reference only in a revision.
+        [item 2]
+3 PASS  Attached-but-unused and used-but-unattached shown correctly. [item 3]
+4 PASS  Writes limited to the two cache keys: after the harness, wp_posts,
+        wp_postmeta and all options (except transients/cron) are identical and
+        uploads are byte-identical. [item 4 + CLEANUP line]
+5 PASS  Bad/missing nonce -> -1; subscriber refused; 0 or 26 IDs refused;
+        paths and non-image IDs rejected; no server paths in responses.
+        [item 5]
+  PASS  uninstall.php removes all scan data and the per-page setting, keeps
+        custom sizes (data backed up and restored). [item 9]
+6 PASS  Browser, 12/12 [a1-browser.txt]: columns; scan unscanned (stored
+        counts = expected = cells); "nothing new" second run; scan all with an
+        injected HTTP 500 (finished with errors, later batches continued);
+        per-row Rescan (only that image, focus kept); filters, file-name
+        search, sorting by usage and title; per-page screen option and
+        pagination; keyboard; live region (4 updates for 29 images); shipped
+        .min.js = build; no console errors except the injected 500.
+7 PASS  400 images / 400 posts (1,262 posts, 5 MB content): about 0.14 s per
+        image (95th percentile 0.18 s), 0 wrong counts. [a1-perf.txt]
+8 PASS  php -l 20/20; JS syntax + build drift clean; PHPCS 0; Plugin Check
+        on the 37-file release build: no errors; M1 20/20, M2 26/26, empty
+        library, M3 18/18, legacy UI unchanged in behaviour, menu 8/8.
+
+4. ISSUES FOUND AND FIXED DURING A1
+-----------------------------------
+- Table showed no rows: column headers were not set in prepare_items(). Fixed.
+- TEST LEFTOVERS (mine): every browser-test login since M3 landed on the
+  Dashboard, whose Quick Draft box created an auto-draft owned by the
+  temporary user; deleting the user moved it to the trash. 32 trashed
+  "Auto Draft" posts + 32 revisions had accumulated. Removed (DB backed up
+  first); the admin user's own auto-draft (ID 447) and 7 older theme-style
+  revisions were left untouched. All browser tests now log in straight to the
+  plugin page and permanently delete anything the test user owns.
+- The runner now fingerprints options, posts and postmeta from outside the
+  test processes at start and end. Over two complete runs plus a final A1 run
+  the database was identical (WPForms caches, Action Scheduler locks, cron and
+  transients excluded: other code rewrites them on every admin page load).
+
+5. LIMITATIONS
+--------------
+- Detection cannot cover theme files, CSS, term/user meta or other websites;
+  the UI says "No usage found", never "unused".
+- Scan time grows with database size (one database search per image). Large
+  sites can scan in several sessions with "Scan images not scanned yet".
+- Results are a snapshot ("Scanned 5 mins ago"); they are not updated
+  automatically when content changes. Use Rescan.
+- Not tested: multisite, media offloaded to S3/CDN, page builders other than
+  the Elementor-style JSON fixture, browsers other than Chromium.

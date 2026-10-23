@@ -1,0 +1,625 @@
+/**
+ * Attachment Summary page: batched usage scan and per-row rescan.
+ *
+ * On page load the images shown on the page are scanned in the background
+ * (quiet run); the refresh icon in each Attachment cell rescans one image.
+ *
+ * Readable source. The enqueued ctgen-attachment-summary.min.js is generated
+ * from this file by v2/tools/build-js.js - never edit the .min.js by hand.
+ *
+ * Endpoints:
+ *   ctgen_usage_get_ids -> { ids: [ ... ] }
+ *   ctgen_usage_scan    -> { results: { id: { count, html } }, errors: { id: message } }
+ */
+( function ( $ ) {
+	'use strict';
+
+	var config = window.CTGENUsageScan || {};
+	var i18n = config.i18n || {};
+
+	var REQUEST_DELAY_MS = 100;
+	var DEFAULT_REQUEST_TIMEOUT_MS = 120000;
+	var DEFAULT_BATCH_SIZE = 10;
+	var MAX_CONSECUTIVE_REQUEST_ERRORS = 3;
+	var ANNOUNCE_STEP_PERCENT = 25;
+	var MAX_LISTED_ERRORS = 50;
+
+	var running = false;
+	var ui = {};
+
+	/**
+	 * Fills %s, %1$s ... placeholders (as used in the PHP translations) and %%.
+	 *
+	 * @param {string} template Translated string.
+	 * @return {string} Formatted string.
+	 */
+	function format( template ) {
+		var args = Array.prototype.slice.call( arguments, 1 );
+		var next = 0;
+
+		return String( template || '' ).replace( /%(?:(\d+)\$s|s|%)/g, function ( match, position ) {
+			var value;
+
+			if ( '%%' === match ) {
+				return '%';
+			}
+
+			value = position ? args[ position - 1 ] : args[ next++ ];
+
+			return undefined === value ? match : String( value );
+		} );
+	}
+
+	function positiveInt( value, fallback ) {
+		var number = parseInt( value, 10 );
+
+		return number > 0 ? number : fallback;
+	}
+
+	function isAuthFailure( xhr ) {
+		var body = xhr && 'string' === typeof xhr.responseText ? $.trim( xhr.responseText ) : '';
+
+		return 403 === xhr.status || '-1' === body || '0' === body;
+	}
+
+	function failureReason( xhr, textStatus ) {
+		if ( 'timeout' === textStatus ) {
+			return i18n.timeout;
+		}
+
+		if ( 0 === xhr.status && 'parsererror' !== textStatus ) {
+			return i18n.network;
+		}
+
+		return i18n.malformed;
+	}
+
+	function request( data ) {
+		data.security = config.nonce;
+
+		return $.ajax( {
+			url: config.ajax_url,
+			type: 'POST',
+			dataType: 'json',
+			timeout: positiveInt( config.request_timeout, DEFAULT_REQUEST_TIMEOUT_MS ),
+			data: data
+		} );
+	}
+
+	/**
+	 * A scan response must carry results/errors objects whose entries look right.
+	 *
+	 * @param {Object} data Response data.
+	 * @return {boolean} Whether the data can be trusted.
+	 */
+	function isValidScanData( data ) {
+		var id;
+
+		if ( ! data || 'object' !== typeof data.results || null === data.results || 'object' !== typeof data.errors || null === data.errors ) {
+			return false;
+		}
+
+		for ( id in data.results ) {
+			if ( Object.prototype.hasOwnProperty.call( data.results, id ) ) {
+				if ( ! data.results[ id ] || 'string' !== typeof data.results[ id ].html || 'number' !== typeof data.results[ id ].count ) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Replaces the "Used in" cell of one image, if it is on the current page.
+	 *
+	 * @param {number|string} id   Attachment ID.
+	 * @param {string}        html Server-rendered, escaped cell HTML.
+	 * @return {jQuery} The new cell (may be empty).
+	 */
+	function replaceCell( id, html ) {
+		var $old = $( '#ctgen-usage-cell-' + parseInt( id, 10 ) );
+		var $new;
+
+		if ( ! $old.length ) {
+			return $();
+		}
+
+		$new = $( $.parseHTML( html ) );
+		$old.replaceWith( $new );
+
+		if ( running ) {
+			$new.find( '.ctgen-usage-refresh' ).prop( 'disabled', true );
+		}
+
+		return $new;
+	}
+
+	/* ------------------------------------------------------------ full scan */
+
+	function cacheUi() {
+		ui.root = $( '#ctgen-usage-ui' );
+		ui.all = $( '#ctgen-usage-scan-all' );
+		ui.fresh = $( '#ctgen-usage-scan-new' );
+		ui.bar = $( '#ctgen-usage-progressbar' );
+		ui.fill = $( '#ctgen-usage-progress' );
+		ui.percent = $( '#ctgen-usage-percentage' );
+		ui.current = $( '#ctgen-usage-current' );
+		ui.status = $( '#ctgen-usage-status' );
+		ui.errors = $( '#ctgen-usage-errors' );
+		ui.allLabel = $.trim( ui.all.text() );
+		ui.freshLabel = $.trim( ui.fresh.text() );
+	}
+
+	function setBusy( busy, trigger ) {
+		running = busy;
+		ui.all.prop( 'disabled', busy ).text( busy && trigger === ui.all[ 0 ] ? i18n.busy : ui.allLabel );
+		ui.fresh.prop( 'disabled', busy ).text( busy && trigger === ui.fresh[ 0 ] ? i18n.busy : ui.freshLabel );
+		$( '.ctgen-usage-refresh' ).prop( 'disabled', busy );
+	}
+
+	/**
+	 * Shows a cell as "being refreshed" (spinning icon, aria-busy).
+	 *
+	 * @param {number[]} ids  Attachment IDs.
+	 * @param {boolean}  busy On or off.
+	 */
+	function markBusy( ids, busy ) {
+		$.each( ids, function ( i, id ) {
+			$( '#ctgen-usage-cell-' + parseInt( id, 10 ) ).toggleClass( 'is-busy', busy ).attr( 'aria-busy', busy ? 'true' : null );
+		} );
+	}
+
+	function percentOf( run ) {
+		return run.total ? Math.floor( ( run.done / run.total ) * 100 ) : 0;
+	}
+
+	function renderProgress( run ) {
+		var pct = percentOf( run );
+
+		ui.root.attr( {
+			'data-done': run.done,
+			'data-total': run.total,
+			'data-scanned': run.scanned,
+			'data-failed': run.failed
+		} );
+
+		if ( run.quiet ) {
+			return; // The background page scan leaves the progress bar alone.
+		}
+
+		ui.fill.css( 'width', pct + '%' );
+		ui.percent.text( run.total ? pct + '%' : '' ).toggleClass( 'ctgen-usage-percentage-light', pct >= 50 );
+		ui.bar.attr( 'aria-valuenow', pct );
+	}
+
+	function announce( run ) {
+		var pct = percentOf( run );
+		var step = Math.floor( pct / ANNOUNCE_STEP_PERCENT ) * ANNOUNCE_STEP_PERCENT;
+
+		if ( ! run.quiet && step > run.lastAnnounced && pct < 100 ) {
+			run.lastAnnounced = step;
+			ui.status.text( format( i18n.announce, step, run.done, run.total ) );
+		}
+	}
+
+	function renderErrors( run ) {
+		var i;
+
+		ui.errors.empty();
+
+		for ( i = 0; i < run.errors.length && i < MAX_LISTED_ERRORS; i++ ) {
+			ui.errors.append( $( '<li></li>' ).text( run.errors[ i ] ) );
+		}
+
+		if ( run.errors.length > MAX_LISTED_ERRORS ) {
+			ui.errors.append( $( '<li></li>' ).text( format( i18n.more, run.errors.length - MAX_LISTED_ERRORS ) ) );
+		}
+	}
+
+	/**
+	 * Terminal state: 'empty', 'complete', 'complete-with-errors' or 'stopped'.
+	 *
+	 * @param {Object} run    Run state.
+	 * @param {string} state  Terminal state.
+	 * @param {string} reason Stop reason (state 'stopped' only).
+	 */
+	function finish( run, state, reason ) {
+		ui.current.text( '' );
+		renderProgress( run );
+		renderErrors( run );
+
+		if ( run.quiet && 'complete' === state ) {
+			ui.status.text( format( i18n.autoDone, run.scanned ) );
+		} else if ( run.quiet && 'complete-with-errors' === state ) {
+			ui.status.text( format( i18n.autoErrors, run.scanned, run.total ) );
+		} else if ( 'empty' === state ) {
+			ui.status.text( run.onlyUnscanned ? i18n.nothingNew : i18n.nothing );
+		} else if ( 'stopped' === state && 0 === run.total ) {
+			ui.status.text( format( i18n.notStarted, reason ) );
+		} else if ( 'stopped' === state ) {
+			ui.status.text( format( i18n.stopped, run.done, run.total, reason ) );
+		} else if ( 'complete-with-errors' === state ) {
+			ui.status.text( format( i18n.doneErrors, run.scanned, run.total ) );
+		} else {
+			ui.status.text( format( i18n.doneOk, run.scanned ) );
+		}
+
+		ui.root.attr( 'data-state', state );
+		if ( run.quiet ) {
+			ui.root.attr( 'data-auto', state );
+		}
+		markBusy( run.ids, false );
+		setBusy( false );
+
+		if ( run.trigger && document.body.contains( run.trigger ) && ( ! document.activeElement || document.body === document.activeElement ) ) {
+			run.trigger.focus();
+		}
+	}
+
+	function batchFailed( run, batch, reason ) {
+		var i;
+
+		for ( i = 0; i < batch.length; i++ ) {
+			run.errors.push( format( i18n.itemError, batch[ i ], reason ) );
+		}
+
+		run.failed += batch.length;
+		run.done += batch.length;
+		run.consecutiveErrors++;
+
+		if ( run.consecutiveErrors >= MAX_CONSECUTIVE_REQUEST_ERRORS ) {
+			finish( run, 'stopped', reason );
+			return;
+		}
+
+		advance( run );
+	}
+
+	function advance( run ) {
+		renderProgress( run );
+		announce( run );
+		window.setTimeout( function () {
+			scanNext( run );
+		}, REQUEST_DELAY_MS );
+	}
+
+	function scanNext( run ) {
+		var batch;
+
+		if ( run.done >= run.total ) {
+			finish( run, run.failed ? 'complete-with-errors' : 'complete' );
+			return;
+		}
+
+		batch = run.ids.slice( run.done, run.done + run.batchSize );
+		markBusy( batch, true );
+
+		if ( ! run.quiet ) {
+			ui.current.text( format( i18n.processing, run.done + 1, run.total ) );
+		}
+
+		request( { action: 'ctgen_usage_scan', ids: batch } )
+			.done( function ( response ) {
+				var id;
+
+				markBusy( batch, false );
+
+				if ( ! response || true !== response.success || ! isValidScanData( response.data ) ) {
+					batchFailed( run, batch, i18n.malformed );
+					return;
+				}
+
+				run.consecutiveErrors = 0;
+
+				for ( id in response.data.results ) {
+					if ( Object.prototype.hasOwnProperty.call( response.data.results, id ) ) {
+						replaceCell( id, response.data.results[ id ].html );
+						run.scanned++;
+					}
+				}
+
+				for ( id in response.data.errors ) {
+					if ( Object.prototype.hasOwnProperty.call( response.data.errors, id ) ) {
+						run.errors.push( format( i18n.itemError, id, String( response.data.errors[ id ] ) ) );
+						run.failed++;
+					}
+				}
+
+				run.done += batch.length;
+				advance( run );
+			} )
+			.fail( function ( xhr, textStatus ) {
+				markBusy( batch, false );
+				if ( isAuthFailure( xhr ) ) {
+					finish( run, 'stopped', i18n.auth );
+					return;
+				}
+				batchFailed( run, batch, failureReason( xhr, textStatus ) );
+			} );
+	}
+
+	/**
+	 * Starts a scan run.
+	 *
+	 * @param {boolean}     onlyUnscanned Only images never scanned (server-side discovery).
+	 * @param {HTMLElement} trigger       The clicked button, if any.
+	 * @param {number[]}    presetIds     Scan exactly these IDs, quietly (background page scan).
+	 */
+	function start( onlyUnscanned, trigger, presetIds ) {
+		var run;
+
+		if ( running ) {
+			return;
+		}
+
+		run = {
+			onlyUnscanned: onlyUnscanned,
+			trigger: trigger,
+			ids: [],
+			total: 0,
+			done: 0,
+			scanned: 0,
+			failed: 0,
+			consecutiveErrors: 0,
+			lastAnnounced: 0,
+			batchSize: positiveInt( config.batch_size, DEFAULT_BATCH_SIZE ),
+			quiet: !! presetIds,
+			errors: []
+		};
+
+		setBusy( true, trigger );
+		ui.errors.empty();
+		ui.root.attr( 'data-state', 'running' );
+
+		if ( run.quiet ) {
+			run.ids = presetIds;
+			run.total = presetIds.length;
+			ui.root.attr( 'data-auto', 'running' );
+			ui.status.text( i18n.autoStart );
+			renderProgress( run );
+			scanNext( run );
+			return;
+		}
+
+		ui.fill.css( 'width', '0%' );
+		ui.percent.text( '' );
+		ui.status.text( i18n.finding );
+
+		request( { action: 'ctgen_usage_get_ids', only_unscanned: onlyUnscanned ? '1' : '0' } )
+			.done( function ( response ) {
+				var ids = response && true === response.success && response.data ? response.data.ids : null;
+				var i;
+
+				if ( ! $.isArray( ids ) ) {
+					finish( run, 'stopped', i18n.malformed );
+					return;
+				}
+
+				for ( i = 0; i < ids.length; i++ ) {
+					if ( 'number' !== typeof ids[ i ] || ids[ i ] < 1 || Math.floor( ids[ i ] ) !== ids[ i ] ) {
+						finish( run, 'stopped', i18n.malformed );
+						return;
+					}
+				}
+
+				run.ids = ids;
+				run.total = ids.length;
+
+				if ( 0 === run.total ) {
+					finish( run, 'empty' );
+					return;
+				}
+
+				renderProgress( run );
+				scanNext( run );
+			} )
+			.fail( function ( xhr, textStatus ) {
+				finish( run, 'stopped', isAuthFailure( xhr ) ? i18n.auth : failureReason( xhr, textStatus ) );
+			} );
+	}
+
+	/* --------------------------------------------------------- row refresh */
+
+	function refreshRow( button ) {
+		var $button = $( button );
+		var id = parseInt( $button.attr( 'data-id' ), 10 );
+		var $cell = $button.closest( '.ctgen-usage-cell' );
+
+		if ( running || ! id || $cell.hasClass( 'is-busy' ) ) {
+			return;
+		}
+
+		$cell.find( '.ctgen-usage-row-error' ).remove();
+		$button.prop( 'disabled', true );
+		markBusy( [ id ], true );
+
+		request( { action: 'ctgen_usage_scan', ids: [ id ] } )
+			.done( function ( response ) {
+				var $new;
+
+				markBusy( [ id ], false );
+
+				if ( response && true === response.success && isValidScanData( response.data ) && response.data.results[ id ] ) {
+					$new = replaceCell( id, response.data.results[ id ].html );
+					$new.find( '.ctgen-usage-refresh' ).trigger( 'focus' );
+					return;
+				}
+
+				$button.prop( 'disabled', false );
+				$cell.append( $( '<span class="ctgen-usage-row-error" role="alert"></span>' ).text( format( i18n.rowError, response && response.data && response.data.errors && response.data.errors[ id ] ? response.data.errors[ id ] : i18n.malformed ) ) );
+			} )
+			.fail( function ( xhr, textStatus ) {
+				markBusy( [ id ], false );
+				$button.prop( 'disabled', false );
+				$cell.append( $( '<span class="ctgen-usage-row-error" role="alert"></span>' ).text( format( i18n.rowError, isAuthFailure( xhr ) ? i18n.auth : failureReason( xhr, textStatus ) ) ) );
+			} );
+	}
+
+	/* ---------------------------------------------------- regenerate WebP */
+
+	/**
+	 * Re-creates the WebP copies of one image and swaps in the refreshed cell.
+	 *
+	 * @param {HTMLElement} button The clicked "Regenerate WebP" button.
+	 */
+	function regenerateWebp( button ) {
+		var $button = $( button );
+		var id = parseInt( $button.attr( 'data-id' ), 10 );
+		var $cell = $button.closest( '.ctgen-webp-cell' );
+		var label = $button.text();
+		var $status = $cell.find( '.ctgen-webp-regenerate-status' );
+
+		if ( ! id || $button.prop( 'disabled' ) ) {
+			return;
+		}
+
+		$button.prop( 'disabled', true ).text( i18n.regenBusy );
+		$status.text( '' );
+
+		request( { action: 'ctgen_summary_regenerate_webp', id: id } )
+			.done( function ( response ) {
+				var data = response && response.data;
+				var $new;
+				var converted;
+				var failed;
+
+				if ( response && true === response.success && data && 'string' === typeof data.html && data.counts && $.isArray( data.errors ) ) {
+					$new = $( $.parseHTML( data.html ) );
+					$cell.replaceWith( $new );
+					converted = parseInt( data.counts.converted, 10 ) || 0;
+					failed = parseInt( data.counts.failed, 10 ) || 0;
+					$new.find( '.ctgen-webp-regenerate-status' ).text( failed ? format( i18n.regenSome, converted, failed ) + ' ' + data.errors.join( '; ' ) : format( i18n.regenDone, converted ) );
+					$new.find( '.ctgen-webp-regenerate' ).trigger( 'focus' );
+					return;
+				}
+
+				$button.prop( 'disabled', false ).text( label );
+				$status.text( format( i18n.regenError, data && data.message ? data.message : i18n.malformed ) );
+			} )
+			.fail( function ( xhr, textStatus ) {
+				$button.prop( 'disabled', false ).text( label );
+				$status.text( format( i18n.regenError, isAuthFailure( xhr ) ? i18n.auth : failureReason( xhr, textStatus ) ) );
+			} );
+	}
+
+	/* -------------------------------------------------------- image viewer */
+
+	var viewer = {};
+
+	/**
+	 * Opens the page's single viewer for the image behind a "View" link.
+	 *
+	 * @param {HTMLElement} link The clicked link (href = image URL).
+	 */
+	function openViewer( link ) {
+		var $link = $( link );
+
+		viewer.trigger = link;
+		viewer.title.text( $link.attr( 'data-title' ) || '' );
+		viewer.about.text( $link.attr( 'data-about' ) || '' );
+		viewer.img.attr( { src: $link.attr( 'href' ), alt: $link.attr( 'data-title' ) || '' } );
+		viewer.root.prop( 'hidden', false );
+		$( document.body ).addClass( 'ctgen-image-viewer-open' );
+		viewer.close.trigger( 'focus' );
+	}
+
+	function closeViewer() {
+		if ( viewer.root.prop( 'hidden' ) ) {
+			return;
+		}
+
+		viewer.root.prop( 'hidden', true );
+		viewer.img.attr( 'src', '' );
+		$( document.body ).removeClass( 'ctgen-image-viewer-open' );
+
+		if ( viewer.trigger && document.body.contains( viewer.trigger ) ) {
+			viewer.trigger.focus();
+		}
+	}
+
+	function initViewer() {
+		viewer.root = $( '#ctgen-image-viewer' );
+		viewer.title = viewer.root.find( '#ctgen-image-viewer-title' );
+		viewer.about = viewer.root.find( '.ctgen-image-viewer-about' );
+		viewer.img = viewer.root.find( '.ctgen-image-viewer-img' );
+		viewer.close = viewer.root.find( '.ctgen-image-viewer-close' );
+
+		if ( ! viewer.root.length ) {
+			return;
+		}
+
+		$( document ).on( 'click', '.ctgen-image-view', function ( event ) {
+			event.preventDefault();
+			openViewer( this );
+		} );
+
+		viewer.close.on( 'click', closeViewer );
+
+		// A click on the dimmed backdrop (not on the box) closes the viewer.
+		viewer.root.on( 'click', function ( event ) {
+			if ( event.target === viewer.root[ 0 ] ) {
+				closeViewer();
+			}
+		} );
+
+		$( document ).on( 'keydown', function ( event ) {
+			if ( viewer.root.prop( 'hidden' ) ) {
+				return;
+			}
+
+			if ( 'Escape' === event.key ) {
+				event.preventDefault();
+				closeViewer();
+			} else if ( 'Tab' === event.key ) {
+				// The close button is the only control in the dialog: keep focus there.
+				event.preventDefault();
+				viewer.close.trigger( 'focus' );
+			}
+		} );
+	}
+
+	$( function () {
+		initViewer();
+		cacheUi();
+
+		if ( ! ui.root.length ) {
+			return;
+		}
+
+		ui.all.on( 'click', function ( event ) {
+			event.preventDefault();
+			start( false, this );
+		} );
+
+		ui.fresh.on( 'click', function ( event ) {
+			event.preventDefault();
+			start( true, this );
+		} );
+
+		// Delegated: WebP cells are replaced after every regeneration.
+		$( document ).on( 'click', '.ctgen-webp-regenerate', function ( event ) {
+			event.preventDefault();
+			regenerateWebp( this );
+		} );
+
+		// Delegated: cells are replaced after every scan.
+		$( document ).on( 'click', '.ctgen-usage-refresh', function ( event ) {
+			event.preventDefault();
+			refreshRow( this );
+		} );
+
+		// Background scan of the images shown on this page, so their usage is current.
+		( function () {
+			var ids = $( '#the-list .ctgen-usage-cell' ).map( function () {
+				return parseInt( String( this.id ).replace( 'ctgen-usage-cell-', '' ), 10 );
+			} ).get().filter( function ( id ) {
+				return id > 0;
+			} );
+
+			if ( ids.length ) {
+				start( false, null, ids );
+			}
+		}() );
+	} );
+}( jQuery ) );

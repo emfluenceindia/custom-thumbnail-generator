@@ -5,6 +5,10 @@
  * @package Custom_Thumbnail_Generator
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 /**
  * Renders the settings form and the default thumbnail sizes table.
  */
@@ -55,6 +59,7 @@ class CTGEN_Functions {
 						<th class="ctg-text-center"><?php esc_html_e( 'Height', 'custom-thumbnail-generator' ); ?></th>
 						<th class="ctg-text-center"><?php esc_html_e( 'Source', 'custom-thumbnail-generator' ); ?></th>
 						<th class="ctg-text-center"><?php esc_html_e( 'Crop', 'custom-thumbnail-generator' ); ?></th>
+						<th class="ctg-text-center"><?php esc_html_e( 'Action', 'custom-thumbnail-generator' ); ?></th>
 					</tr>
 				</thead>
 				<tbody id="ctg-sizes-list">
@@ -72,6 +77,7 @@ class CTGEN_Functions {
 								<td class="ctg-text-center"><?php echo esc_html( $size['height'] ); ?>px</td>
 								<td class="ctg-text-center"><?php echo wp_kses_post( $this->ctgen_get_size_table_title( $slug ) ); ?></td>
 								<td class="ctg-text-center"><?php echo $size['crop'] ? '<span class="yes">✔</span>' : '<span class="no">✖</span>'; ?></td>
+								<td class="ctg-text-center"><?php self::ctgen_render_webp_convert_button( $slug ); ?></td>
 							</tr>
 							<?php
 						}
@@ -84,19 +90,61 @@ class CTGEN_Functions {
 	}
 
 	/**
+	 * Renders the plugin header (logo, title, description) shared by all plugin pages.
+	 *
+	 * @param string $title Translated page heading.
+	 * @return void
+	 */
+	public static function ctgen_render_page_header( $title ) {
+		?>
+		<table class="ctgen-plugin-header-table">
+			<tr>
+				<td class="ctgen-plugin-header-logo">
+					<img src="<?php echo esc_url( CTGEN_LOGO ); ?>" alt="<?php esc_attr_e( 'Custom Thumbnail Generator', 'custom-thumbnail-generator' ); ?>" /><?php // phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage -- The plugin's own logo from its assets folder; not a media library image. ?>
+				</td>
+				<td class="ctgen-plugin-header-title">
+					<h1>
+						<?php echo esc_html( $title ); ?>
+						<hr />
+						<span><?php esc_html_e( 'The plugin registers and integrates all defined custom thumbnail sizes into the WordPress environment. They remain globally accessible and functional, providing a consistent image handling system that persists across all themes. In addition to that, it offers thumbnail regeneration capability as well.', 'custom-thumbnail-generator' ); ?></span>
+					</h1>
+					<p style="font-size:14px;"></p>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Renders the per-size "convert to WebP" button used in both size tables.
+	 *
+	 * Uses its own class (ctgen-webp-convert-size) so it can never trigger the
+	 * existing regenerate (.ctgen-regen-thumbs) or remove (.ctgen-delete-custom-size)
+	 * handlers.
+	 *
+	 * @param string $slug Registered image size slug.
+	 * @return void
+	 */
+	public static function ctgen_render_webp_convert_button( $slug ) {
+		/* translators: %s: image size name, e.g. "thumbnail". */
+		$label = sprintf( __( 'Convert %s thumbnails to WebP', 'custom-thumbnail-generator' ), $slug );
+		?>
+		<button type="button" class="button ctgen-webp-convert-size" data-slug="<?php echo esc_attr( $slug ); ?>" aria-label="<?php echo esc_attr( $label ); ?>" title="<?php echo esc_attr( $label ); ?>"><?php esc_html_e( 'WebP', 'custom-thumbnail-generator' ); ?></button>
+		<?php
+	}
+
+	/**
 	 * Display thumbnail source.
 	 *
 	 * @param string $slug Image size slug.
 	 * @return string
 	 */
 	private function ctgen_get_size_table_title( $slug ) {
-		if ( in_array( $slug, CTGEN_NATIVE_THUMB_SIZES, true ) ) {
-			$slug = wp_kses_post( "<span class='ctgen-image-size-register-by'>WordPress Core</span>" );
-		} else {
-			$slug = wp_kses_post( "<span class='ctgen-image-size-register-by'>" . wp_get_theme()->get( 'Name' ) ) . '</span>';
-		}
+		$source = in_array( $slug, CTGEN_NATIVE_THUMB_SIZES, true )
+			? __( 'WordPress Core', 'custom-thumbnail-generator' )
+			: wp_get_theme()->get( 'Name' );
 
-		return $slug;
+		return '<span class="ctgen-image-size-register-by">' . esc_html( $source ) . '</span>';
 	}
 
 	/** Render the form */
@@ -104,7 +152,7 @@ class CTGEN_Functions {
 		$html_template = CTGEN_TEMPLATE_DIR . 'ctgen-form-html.php';
 
 		if ( ! file_exists( $html_template ) ) {
-			echo '<p class="ctg-common-error">Error! Template file missing.</p>';
+			echo '<p class="ctg-common-error">' . esc_html__( 'Error! Template file missing.', 'custom-thumbnail-generator' ) . '</p>';
 			return;
 		}
 

@@ -37,6 +37,97 @@ class CTGEN_Webp_Ajax_Handlers {
 
 		add_action( 'wp_ajax_ctgen_webp_get_eligible_attachments', array( $this, 'ajax_get_eligible_attachments' ) );
 		add_action( 'wp_ajax_ctgen_webp_convert_attachment', array( $this, 'ajax_convert_attachment' ) );
+		add_action( 'delete_attachment', array( $this, 'delete_webp_copies' ) );
+	}
+
+	/**
+	 * Deletes the WebP copies made by this plugin when their image is deleted,
+	 * so a deleted image does not stay publicly reachable as WebP.
+	 *
+	 * Runs on 'delete_attachment' (before WordPress removes the image files).
+	 * Conservative: only JPEG/PNG attachments inside the uploads folder; nothing
+	 * when another image shares the base name; never a WebP that is a Media
+	 * Library item of its own; only a valid WebP with the same dimensions as the
+	 * file it was made from.
+	 *
+	 * @param int $attachment_id Attachment being deleted.
+	 * @return void
+	 */
+	public function delete_webp_copies( $attachment_id ) {
+		$attachment_id = (int) $attachment_id;
+
+		if ( ! in_array( get_post_mime_type( $attachment_id ), CTGEN_Webp_Converter::ALLOWED_SOURCE_MIME_TYPES, true ) ) {
+			return;
+		}
+
+		$attached_file = get_attached_file( $attachment_id );
+		$uploads       = wp_get_upload_dir();
+		$basedir       = empty( $uploads['basedir'] ) ? false : realpath( $uploads['basedir'] );
+
+		if ( ! is_string( $attached_file ) || '' === $attached_file || false === $basedir ) {
+			return;
+		}
+
+		$real_dir = realpath( dirname( $attached_file ) );
+
+		if ( false === $real_dir || 0 !== strpos( trailingslashit( $real_dir ), trailingslashit( $basedir ) ) ) {
+			return;
+		}
+
+		$directory = trailingslashit( dirname( $attached_file ) );
+		$metadata  = wp_get_attachment_metadata( $attachment_id );
+		$metadata  = is_array( $metadata ) ? $metadata : array();
+
+		if ( $this->has_name_conflict( $directory, $attached_file, $metadata ) ) {
+			return;
+		}
+
+		$files = array( wp_basename( $attached_file ) );
+
+		if ( ! empty( $metadata['original_image'] ) && is_string( $metadata['original_image'] ) ) {
+			$files[] = wp_basename( $metadata['original_image'] );
+		}
+
+		$sizes  = isset( $metadata['sizes'] ) && is_array( $metadata['sizes'] ) ? $metadata['sizes'] : array();
+		$backup = get_post_meta( $attachment_id, '_wp_attachment_backup_sizes', true );
+
+		foreach ( array_merge( $sizes, is_array( $backup ) ? $backup : array() ) as $size ) {
+			if ( is_array( $size ) && ! empty( $size['file'] ) && is_string( $size['file'] ) ) {
+				$files[] = wp_basename( $size['file'] );
+			}
+		}
+
+		foreach ( array_unique( $files ) as $file ) {
+			$source = $directory . $file;
+			$webp   = $directory . pathinfo( $file, PATHINFO_FILENAME ) . '.webp';
+
+			if ( $webp === $source || ! is_file( $webp ) || ! is_file( $source ) ) {
+				continue;
+			}
+
+			$owner = $this->attachment_id_for_file( $webp );
+
+			if ( 0 !== $owner && $attachment_id !== $owner ) {
+				continue;
+			}
+
+			$source_info = wp_getimagesize( $source );
+
+			if ( false === $source_info ) {
+				continue;
+			}
+
+			$source_size = array(
+				'width'  => $source_info[0],
+				'height' => $source_info[1],
+			);
+
+			if ( false === $this->verify_existing_webp( $webp, $source_size ) ) {
+				continue;
+			}
+
+			wp_delete_file( $webp );
+		}
 	}
 
 	/**
@@ -117,21 +208,131 @@ class CTGEN_Webp_Ajax_Handlers {
 	}
 
 	/**
-	 * Converts one attachment's thumbnail(s) to WebP.
+	 * Image file extensions whose files share a base name with this
+	 * attachment's files in a way that would make their WebP copies collide.
+	 *
+	 * @var string[]
+	 */
+	const SIBLING_IMAGE_EXTENSIONS = array( 'jpg', 'jpeg', 'jpe', 'png', 'gif', 'webp', 'avif', 'heic', 'heif', 'bmp', 'tif', 'tiff' );
+
+	/**
+	 * Converts one attachment's thumbnail(s) to WebP. For 'all_sizes' this
+	 * also covers the full-size file WordPress serves (the "-scaled" copy for
+	 * large uploads) and, when present, the untouched original upload.
 	 *
 	 * @param int    $attachment_id Attachment post ID.
 	 * @param string $scope         Either 'all_sizes' or 'size'.
 	 * @param string $size_slug     Required registered size slug when $scope is 'size'; ignored otherwise.
+	 * @param bool   $force         Re-create WebP copies even when a current one exists (still never
+	 *                              overwrites another attachment's file or a name-clashing image).
 	 * @return array|WP_Error {
 	 *     Array on success (even if individual sizes failed/were skipped), WP_Error only when the
 	 *     request itself is invalid (bad attachment, bad scope, bad slug).
 	 *
 	 *     @type int   $attachment_id Echoes the requested attachment ID.
-	 *     @type array $sizes         Map of size slug => {outcome, width?, height?, file?, code?, message?}.
+	 *     @type array $sizes         Map of size slug ('full' and 'original_image' for the full-size
+	 *                                files) => {outcome, width?, height?, file?, code?, message?}.
 	 *     @type array $counts        {converted, already_current, skipped, failed} counts across $sizes.
 	 * }
 	 */
-	public function convert_attachment( $attachment_id, $scope, $size_slug ) {
+	public function convert_attachment( $attachment_id, $scope, $size_slug, $force = false ) {
+		$valid = $this->validate_image_attachment( $attachment_id );
+
+		if ( is_wp_error( $valid ) ) {
+			return $valid;
+		}
+
+		if ( ! in_array( $scope, array( 'all_sizes', 'size' ), true ) ) {
+			return new WP_Error(
+				'ctgen_webp_invalid_scope',
+				__( 'The conversion scope must be either "all_sizes" or "size".', 'custom-thumbnail-generator' )
+			);
+		}
+
+		$prepared = $this->load_entries( $attachment_id, $scope, $size_slug );
+
+		if ( is_wp_error( $prepared ) ) {
+			return $prepared;
+		}
+
+		$sizes  = array();
+		$counts = array(
+			'converted'       => 0,
+			'already_current' => 0,
+			'skipped'         => 0,
+			'failed'          => 0,
+		);
+
+		foreach ( $prepared['entries'] as $slug => $entry ) {
+			$outcome        = $this->convert_entry( $prepared, $entry, $attachment_id, $force );
+			$sizes[ $slug ] = $outcome;
+			++$counts[ $outcome['outcome'] ];
+		}
+
+		return array(
+			'attachment_id' => $attachment_id,
+			'sizes'         => $sizes,
+			'counts'        => $counts,
+		);
+	}
+
+	/**
+	 * Every file of an attachment that "all_sizes" would convert, in order:
+	 * 'full', 'original_image' (scaled uploads only), then each size.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return array|WP_Error Map of part key => {file, width, height}.
+	 */
+	public function list_parts( $attachment_id ) {
+		$valid = $this->validate_image_attachment( $attachment_id );
+
+		if ( is_wp_error( $valid ) ) {
+			return $valid;
+		}
+
+		$prepared = $this->load_entries( $attachment_id, 'all_sizes', '' );
+
+		return is_wp_error( $prepared ) ? $prepared : $prepared['entries'];
+	}
+
+	/**
+	 * Converts one part (a key from list_parts()) of an attachment.
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $part          Part key: 'full', 'original_image' or a size slug.
+	 * @param bool   $force         Re-create even when a current copy exists.
+	 * @return array|WP_Error Outcome as in convert_attachment()'s 'sizes' entries.
+	 */
+	public function convert_part( $attachment_id, $part, $force = false ) {
+		$valid = $this->validate_image_attachment( $attachment_id );
+
+		if ( is_wp_error( $valid ) ) {
+			return $valid;
+		}
+
+		$prepared = $this->load_entries( $attachment_id, 'all_sizes', '' );
+
+		if ( is_wp_error( $prepared ) ) {
+			return $prepared;
+		}
+
+		if ( ! isset( $prepared['entries'][ $part ] ) ) {
+			return new WP_Error(
+				'ctgen_webp_unknown_part',
+				__( 'This image has no such file to convert.', 'custom-thumbnail-generator' )
+			);
+		}
+
+		return $this->convert_entry( $prepared, $prepared['entries'][ $part ], $attachment_id, $force );
+	}
+
+	/**
+	 * Checks that an ID is a JPEG or PNG image attachment (GIF is excluded).
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return true|WP_Error
+	 */
+	private function validate_image_attachment( $attachment_id ) {
 		if ( $attachment_id <= 0 ) {
 			return new WP_Error(
 				'ctgen_webp_invalid_attachment',
@@ -162,13 +363,18 @@ class CTGEN_Webp_Ajax_Handlers {
 			);
 		}
 
-		if ( ! in_array( $scope, array( 'all_sizes', 'size' ), true ) ) {
-			return new WP_Error(
-				'ctgen_webp_invalid_scope',
-				__( 'The conversion scope must be either "all_sizes" or "size".', 'custom-thumbnail-generator' )
-			);
-		}
+		return true;
+	}
 
+	/**
+	 * Resolves the files to process for a scope.
+	 *
+	 * @param int    $attachment_id Attachment ID (already validated).
+	 * @param string $scope         'all_sizes' or 'size'.
+	 * @param string $size_slug     Size slug for scope 'size'.
+	 * @return array|WP_Error {entries, dir, name_conflict}.
+	 */
+	private function load_entries( $attachment_id, $scope, $size_slug ) {
 		$metadata = wp_get_attachment_metadata( $attachment_id );
 
 		if ( empty( $metadata ) || ! is_array( $metadata ) ) {
@@ -197,25 +403,38 @@ class CTGEN_Webp_Ajax_Handlers {
 
 		$thumbnail_dir = trailingslashit( dirname( $attached_file ) );
 
-		$sizes  = array();
-		$counts = array(
-			'converted'       => 0,
-			'already_current' => 0,
-			'skipped'         => 0,
-			'failed'          => 0,
-		);
+		$files_to_process = 'all_sizes' === $scope ? $this->full_size_entries( $metadata, $attached_file ) : array();
 
 		foreach ( $size_slugs_to_process as $slug ) {
-			$outcome        = $this->process_size( $existing_sizes, $slug, $thumbnail_dir );
-			$sizes[ $slug ] = $outcome;
-			++$counts[ $outcome['outcome'] ];
+			$files_to_process[ $slug ] = isset( $existing_sizes[ $slug ] ) && is_array( $existing_sizes[ $slug ] ) ? $existing_sizes[ $slug ] : array();
 		}
 
 		return array(
-			'attachment_id' => $attachment_id,
-			'sizes'         => $sizes,
-			'counts'        => $counts,
+			'entries'       => $files_to_process,
+			'dir'           => $thumbnail_dir,
+			'name_conflict' => $this->has_name_conflict( $thumbnail_dir, $attached_file, $metadata ),
 		);
+	}
+
+	/**
+	 * Converts one resolved entry, honouring the name-conflict guard.
+	 *
+	 * @param array $prepared      From load_entries().
+	 * @param array $entry         {file, width, height}.
+	 * @param int   $attachment_id Attachment ID.
+	 * @param bool  $force         Re-create even when a current copy exists.
+	 * @return array Outcome.
+	 */
+	private function convert_entry( $prepared, $entry, $attachment_id, $force ) {
+		if ( $prepared['name_conflict'] ) {
+			return array(
+				'outcome' => 'failed',
+				'code'    => 'ctgen_webp_name_conflict',
+				'message' => $this->safe_error_message( 'ctgen_webp_name_conflict' ),
+			);
+		}
+
+		return $this->process_file( $entry, $prepared['dir'], $attachment_id, $force );
 	}
 
 	/**
@@ -231,8 +450,8 @@ class CTGEN_Webp_Ajax_Handlers {
 		if ( 'all_sizes' === $scope ) {
 			// Every size actually represented in this attachment's own metadata -
 			// core, theme, and plugin-registered sizes are all represented the
-			// same way here, and the full-size original is never a member of
-			// 'sizes', so it can never be reached from this list.
+			// same way here. The full-size files are added separately by
+			// full_size_entries(), never mixed into this list.
 			return array_keys( $existing_sizes );
 		}
 
@@ -256,12 +475,111 @@ class CTGEN_Webp_Ajax_Handlers {
 	}
 
 	/**
-	 * Converts (or reports on) a single size for an attachment whose
-	 * metadata and thumbnail directory are already resolved.
+	 * Entries for the full-size files: the file WordPress serves as "full"
+	 * (the "-scaled" copy for large uploads) and the original upload that
+	 * WordPress keeps when it scales an image down.
 	 *
-	 * @param array  $existing_sizes The attachment's existing 'sizes' metadata.
-	 * @param string $slug           The size slug to process.
-	 * @param string $thumbnail_dir  Absolute, trailing-slashed directory containing the thumbnail files.
+	 * @param array  $metadata      The attachment's metadata.
+	 * @param string $attached_file Absolute path of the attached (full-size) file.
+	 * @return array Map of 'full' / 'original_image' => {file, width, height}.
+	 */
+	private function full_size_entries( $metadata, $attached_file ) {
+		$entries = array(
+			'full' => array(
+				'file'   => wp_basename( $attached_file ),
+				'width'  => isset( $metadata['width'] ) ? (int) $metadata['width'] : 0,
+				'height' => isset( $metadata['height'] ) ? (int) $metadata['height'] : 0,
+			),
+		);
+
+		if ( ! empty( $metadata['original_image'] ) && is_string( $metadata['original_image'] ) && wp_basename( $metadata['original_image'] ) !== wp_basename( $attached_file ) ) {
+			// The original's dimensions are not stored in metadata; process_file() reads them from the file.
+			$entries['original_image'] = array(
+				'file'   => wp_basename( $metadata['original_image'] ),
+				'width'  => 0,
+				'height' => 0,
+			);
+		}
+
+		return $entries;
+	}
+
+	/**
+	 * Whether another image file in the same folder shares this attachment's
+	 * base name with a different extension (e.g. photo.jpg and photo.png).
+	 * Their WebP copies would have identical names, so neither may be written.
+	 *
+	 * Uses only files on disk, except for a same-named .webp file, which may be
+	 * this attachment's own earlier copy: that one counts as a conflict only
+	 * when it is a Media Library item of its own.
+	 *
+	 * @param string $directory     Absolute, trailing-slashed directory of the attachment.
+	 * @param string $attached_file Absolute path of the attached file.
+	 * @param array  $metadata      The attachment's metadata.
+	 * @return bool
+	 */
+	private function has_name_conflict( $directory, $attached_file, $metadata ) {
+		$own_files = array( wp_basename( $attached_file ) );
+
+		if ( ! empty( $metadata['original_image'] ) && is_string( $metadata['original_image'] ) ) {
+			$own_files[] = wp_basename( $metadata['original_image'] );
+		}
+
+		// Sub-sizes and WebP copies are named after the original upload, not the "-scaled" copy.
+		$base = pathinfo( end( $own_files ), PATHINFO_FILENAME );
+
+		foreach ( array( $base, $base . '-scaled' ) as $name ) {
+			foreach ( self::SIBLING_IMAGE_EXTENSIONS as $extension ) {
+				$candidate = $name . '.' . $extension;
+
+				if ( in_array( $candidate, $own_files, true ) || ! file_exists( $directory . $candidate ) ) {
+					continue;
+				}
+
+				if ( 'webp' !== $extension || $this->is_attachment_file( $directory . $candidate ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Whether a file is the main file of a Media Library item.
+	 *
+	 * @param string $path Absolute file path inside the uploads directory.
+	 * @return bool
+	 */
+	private function is_attachment_file( $path ) {
+		return 0 !== $this->attachment_id_for_file( $path );
+	}
+
+	/**
+	 * ID of the Media Library item whose main file is $path, or 0.
+	 *
+	 * @param string $path Absolute file path inside the uploads directory.
+	 * @return int
+	 */
+	private function attachment_id_for_file( $path ) {
+		$uploads = wp_get_upload_dir();
+		$basedir = trailingslashit( $uploads['basedir'] );
+
+		if ( empty( $uploads['basedir'] ) || 0 !== strpos( $path, $basedir ) ) {
+			return 0;
+		}
+
+		return (int) attachment_url_to_postid( trailingslashit( $uploads['baseurl'] ) . substr( $path, strlen( $basedir ) ) );
+	}
+
+	/**
+	 * Converts (or reports on) one file of an attachment: a thumbnail size or
+	 * one of the full-size files.
+	 *
+	 * @param array  $entry         {file, width, height} of the source file; width/height may be 0 (read from the file).
+	 * @param string $thumbnail_dir Absolute, trailing-slashed directory containing the attachment's files.
+	 * @param int    $attachment_id Attachment ID (another attachment's file is never overwritten).
+	 * @param bool   $force         Skip the "already current" check and convert again.
 	 * @return array {
 	 *     @type string $outcome One of 'converted', 'already_current', 'skipped', 'failed'.
 	 *     @type int    $width   Present when outcome is 'converted' or 'already_current'.
@@ -272,8 +590,8 @@ class CTGEN_Webp_Ajax_Handlers {
 	 *     @type string $message Present when outcome is 'failed'.
 	 * }
 	 */
-	private function process_size( $existing_sizes, $slug, $thumbnail_dir ) {
-		if ( empty( $existing_sizes[ $slug ]['file'] ) || ! is_string( $existing_sizes[ $slug ]['file'] ) ) {
+	private function process_file( $entry, $thumbnail_dir, $attachment_id, $force = false ) {
+		if ( empty( $entry['file'] ) || ! is_string( $entry['file'] ) ) {
 			return array(
 				'outcome' => 'skipped',
 				'reason'  => 'no_file_for_size',
@@ -281,7 +599,7 @@ class CTGEN_Webp_Ajax_Handlers {
 		}
 
 		// Thumbnails always sit beside the original, so only the basename is ever used.
-		$thumbnail_file = wp_basename( $existing_sizes[ $slug ]['file'] );
+		$thumbnail_file = wp_basename( $entry['file'] );
 		$source_path    = $thumbnail_dir . $thumbnail_file;
 
 		if ( ! file_exists( $source_path ) ) {
@@ -293,7 +611,29 @@ class CTGEN_Webp_Ajax_Handlers {
 
 		$destination_path = $thumbnail_dir . pathinfo( $thumbnail_file, PATHINFO_FILENAME ) . '.webp';
 
-		$already_current = $this->verify_existing_webp( $destination_path, $existing_sizes[ $slug ] );
+		// Never replace a file that is a Media Library item of its own (e.g. an uploaded photo.webp).
+		if ( $destination_path !== $source_path && file_exists( $destination_path ) ) {
+			$owner = $this->attachment_id_for_file( $destination_path );
+
+			if ( 0 !== $owner && (int) $attachment_id !== $owner ) {
+				return array(
+					'outcome' => 'failed',
+					'code'    => 'ctgen_webp_destination_in_use',
+					'message' => $this->safe_error_message( 'ctgen_webp_destination_in_use' ),
+				);
+			}
+		}
+
+		if ( empty( $entry['width'] ) || empty( $entry['height'] ) ) {
+			$source_info = wp_getimagesize( $source_path );
+
+			if ( false !== $source_info ) {
+				$entry['width']  = (int) $source_info[0];
+				$entry['height'] = (int) $source_info[1];
+			}
+		}
+
+		$already_current = $force ? false : $this->verify_existing_webp( $destination_path, $entry );
 
 		if ( false !== $already_current ) {
 			return array(
@@ -371,6 +711,8 @@ class CTGEN_Webp_Ajax_Handlers {
 			'ctgen_webp_source_corrupt'          => __( 'The source thumbnail file appears to be corrupt.', 'custom-thumbnail-generator' ),
 			'ctgen_webp_unsupported_source_type' => __( 'This thumbnail is not in a supported format.', 'custom-thumbnail-generator' ),
 			'ctgen_webp_gif_excluded'            => __( 'GIF images are not converted to WebP. Animated GIFs would lose their animation, so all GIF files are skipped.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_name_conflict'           => __( 'Another image in the same folder has the same name with a different extension, so both WebP copies would get the same file name. Nothing was written for this image.', 'custom-thumbnail-generator' ),
+			'ctgen_webp_destination_in_use'      => __( 'A Media Library file already uses this WebP file name. It was left untouched.', 'custom-thumbnail-generator' ),
 			'ctgen_webp_invalid_destination'     => __( 'The WebP file could not be written to its destination.', 'custom-thumbnail-generator' ),
 			'ctgen_webp_editor_unavailable'      => __( 'No image editor is available to process this thumbnail.', 'custom-thumbnail-generator' ),
 			'ctgen_webp_output_unsupported'      => __( 'This server cannot produce WebP output.', 'custom-thumbnail-generator' ),

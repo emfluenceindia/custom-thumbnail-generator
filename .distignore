@@ -18,6 +18,7 @@
 
 # Backups made before editing existing files
 *.bak
+*.bak[0-9]*
 
 # Dependency and build tooling
 /node_modules

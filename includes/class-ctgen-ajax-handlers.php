@@ -5,10 +5,28 @@
  * @package Custom_Thumbnail_Generator
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 /**
  * Registers and handles the plugin's existing admin AJAX actions.
  */
 class CTGEN_Ajax_Handlers {
+
+	/**
+	 * Smallest width/height (px) accepted for a custom size (same as the form).
+	 *
+	 * @var int
+	 */
+	const MIN_DIMENSION = 25;
+
+	/**
+	 * Largest width/height (px) accepted for a custom size.
+	 *
+	 * @var int
+	 */
+	const MAX_DIMENSION = 10000;
 
 	/**
 	 * Registers the AJAX actions.
@@ -29,9 +47,7 @@ class CTGEN_Ajax_Handlers {
 	public function ctgen_ajax_add_custom_size() {
 		check_ajax_referer( 'ctgen_media_actions', 'security' );
 
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( 'You are not authorized to perform this action!' );
-		}
+		self::authorize();
 
 		$fld_validation_message = __( 'Not all field values are supplied!', 'custom-thumbnail-generator' );
 
@@ -39,19 +55,31 @@ class CTGEN_Ajax_Handlers {
 			wp_send_json_error( $fld_validation_message );
 		}
 
-		$width  = absint( sanitize_text_field( wp_unslash( $_POST['ctgen-width'] ) ) );
-		$height = absint( sanitize_text_field( wp_unslash( $_POST['ctgen-height'] ) ) );
-		$crop   = sanitize_text_field( isset( $_POST['ctgen-crop'] ) );
-		$slug   = 'ctgen_' . $width . 'x' . $height;
+		$width  = self::dimension( sanitize_text_field( wp_unslash( $_POST['ctgen-width'] ) ) );
+		$height = self::dimension( sanitize_text_field( wp_unslash( $_POST['ctgen-height'] ) ) );
+
+		if ( ! $width || ! $height ) {
+			wp_send_json_error(
+				sprintf(
+					/* translators: 1: smallest allowed size in pixels, 2: largest allowed size in pixels. */
+					__( 'Width and height must be whole numbers from %1$d to %2$d pixels.', 'custom-thumbnail-generator' ),
+					self::MIN_DIMENSION,
+					self::MAX_DIMENSION
+				)
+			);
+		}
+
+		$crop = isset( $_POST['ctgen-crop'] ) && '' !== sanitize_text_field( wp_unslash( $_POST['ctgen-crop'] ) );
+		$slug = 'ctgen_' . $width . 'x' . $height;
 
 		$sizes = get_option( 'ctgen_custom_image_sizes', array() );
-
-		$str_message = '';
+		$sizes = is_array( $sizes ) ? $sizes : array();
 
 		if ( isset( $sizes[ $slug ] ) ) {
-			$str_message = "The requested thumbnail size ($width px x $height px) already exists!";
-			wp_send_json_error( $str_message );
-			die();
+			wp_send_json_error(
+				/* translators: 1: width in pixels, 2: height in pixels. */
+				sprintf( __( 'The requested thumbnail size (%1$d px x %2$d px) already exists!', 'custom-thumbnail-generator' ), $width, $height )
+			);
 		}
 
 		$sizes[ $slug ] = compact( 'width', 'height', 'crop' );
@@ -72,9 +100,7 @@ class CTGEN_Ajax_Handlers {
 	public function ctgen_ajax_load_thumb_list() {
 		check_ajax_referer( 'ctgen_media_actions', 'security' );
 
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( 'You are not authorized to perform this action!' );
-		}
+		self::authorize();
 
 		$html_template = CTGEN_TEMPLATE_DIR . 'ctgen-custom-thumb-list-html.php';
 		ob_start();
@@ -93,9 +119,7 @@ class CTGEN_Ajax_Handlers {
 	public function ctgen_get_all_attachments() {
 		check_ajax_referer( 'ctgen_media_actions', 'security' );
 
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( 'You are not authorized to perform this action!' );
-		}
+		self::authorize();
 
 		$query_args = array(
 			'post_type'      => 'attachment',
@@ -115,27 +139,28 @@ class CTGEN_Ajax_Handlers {
 	public function ctgen_regenerate_single_attachment_thumbnail() {
 		check_ajax_referer( 'ctgen_media_actions', 'security' );
 
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( 'You are not authorized to perform this action!' );
+		self::authorize();
+
+		$id = isset( $_POST['attachment_id'] ) ? absint( wp_unslash( $_POST['attachment_id'] ) ) : 0;
+
+		if ( ! $id || 'attachment' !== get_post_type( $id ) || ! wp_attachment_is_image( $id ) ) {
+			wp_send_json_error( array( 'message' => __( 'The specified item is not an image attachment.', 'custom-thumbnail-generator' ) ) );
 		}
 
-		if ( ! isset( $_POST['attachment_id'] ) || empty( $_POST['attachment_id'] ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid argument' ) );
-		}
+		$file = get_attached_file( $id );
 
-		$id = (int) $_POST['attachment_id'];
-		if ( ! $id ) {
-			wp_send_json_error( array( 'message' => 'Invalid ID' ) );
+		if ( ! $file || ! file_exists( $file ) ) {
+			wp_send_json_error( array( 'message' => __( 'The image file could not be found.', 'custom-thumbnail-generator' ) ) );
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/image.php';
-		$metadata = wp_generate_attachment_metadata( $id, get_attached_file( $id ) );
+		$metadata = wp_generate_attachment_metadata( $id, $file );
 
 		if ( $metadata ) {
 			wp_update_attachment_metadata( $id, $metadata );
-			wp_send_json_success( array( 'message' => 'Success' ) );
+			wp_send_json_success( array( 'message' => __( 'Success', 'custom-thumbnail-generator' ) ) );
 		} else {
-			wp_send_json_error( array( 'message' => 'Failed' ) );
+			wp_send_json_error( array( 'message' => __( 'Failed', 'custom-thumbnail-generator' ) ) );
 		}
 	}
 
@@ -146,12 +171,10 @@ class CTGEN_Ajax_Handlers {
 	public function ctgen_regenerate_thumbs_for_single_size() {
 		check_ajax_referer( 'ctgen_media_actions', 'security' );
 
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( 'You are not authorized to perform this action!' );
-		}
+		self::authorize();
 
 		if ( ! isset( $_POST['slug'] ) || empty( $_POST['slug'] ) || ! is_string( $_POST['slug'] ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid thumbnail size info.' ) );
+			wp_send_json_error( array( 'message' => __( 'Invalid thumbnail size info.', 'custom-thumbnail-generator' ) ) );
 		}
 
 		$target_size            = sanitize_text_field( wp_unslash( $_POST['slug'] ) );
@@ -161,7 +184,7 @@ class CTGEN_Ajax_Handlers {
 			wp_send_json_error(
 				array(
 					'success' => false,
-					'message' => 'Supplied thumb size is not defined.',
+					'message' => __( 'Supplied thumb size is not defined.', 'custom-thumbnail-generator' ),
 				)
 			);
 		}
@@ -179,7 +202,7 @@ class CTGEN_Ajax_Handlers {
 			wp_send_json_error(
 				array(
 					'success' => false,
-					'message' => 'Media library contains no image. Thumbnail generation failed.',
+					'message' => __( 'Media library contains no image. Thumbnail generation failed.', 'custom-thumbnail-generator' ),
 				)
 			);
 		}
@@ -187,30 +210,40 @@ class CTGEN_Ajax_Handlers {
 		$count = 0;
 
 		foreach ( $attachments as $att ) {
-			$id     = $att->ID;
-			$file   = get_attached_file( $id );
+			$id   = $att->ID;
+			$file = get_attached_file( $id );
+
+			if ( ! $file || ! file_exists( $file ) ) {
+				continue;
+			}
+
 			$editor = wp_get_image_editor( $file );
 
 			if ( is_wp_error( $editor ) ) {
 				continue;
 			}
 
-			// Resize just the target size.
-			$thumb_width  = $registered_thumb_sizes[ $target_size ]['width'];
-			$thumb_height = $registered_thumb_sizes[ $target_size ]['height'];
-			$thumb_crop   = $registered_thumb_sizes[ $target_size ]['crop'];
+			// Create just the target size. Like core (_wp_make_subsizes), this never
+			// upscales: an image smaller than the size gets no file for it.
+			// make_subsize() is not part of the WP_Image_Editor base class, so
+			// other editors fall back to multi_resize(), as core does.
+			if ( method_exists( $editor, 'make_subsize' ) ) {
+				$saved = $editor->make_subsize( $registered_thumb_sizes[ $target_size ] );
+			} else {
+				$made  = $editor->multi_resize( array( $target_size => $registered_thumb_sizes[ $target_size ] ) );
+				$saved = isset( $made[ $target_size ] ) ? $made[ $target_size ] : new WP_Error( 'ctgen_no_subsize' );
+			}
 
-			$editor->resize( $thumb_width, $thumb_height, $thumb_crop );
-			$saved = $editor->save();
-
-			if ( is_wp_error( $saved ) ) {
+			if ( is_wp_error( $saved ) || ! is_array( $saved ) || empty( $saved['file'] ) ) {
 				continue;
 			}
 
 			// Update metadata for the specific size.
-			$meta                          = wp_get_attachment_metadata( $id );
+			$meta = wp_get_attachment_metadata( $id );
+			$meta = is_array( $meta ) ? $meta : array();
+
 			$meta['sizes'][ $target_size ] = array(
-				'file'      => basename( $saved['file'] ),
+				'file'      => wp_basename( $saved['file'] ),
 				'width'     => $saved['width'],
 				'height'    => $saved['height'],
 				'mime-type' => $saved['mime-type'],
@@ -224,7 +257,8 @@ class CTGEN_Ajax_Handlers {
 		wp_send_json_success(
 			array(
 				'success' => true,
-				'message' => $count . ' ' . $target_size . ' thumbnails generated successfully.',
+				/* translators: 1: number of thumbnails, 2: thumbnail size name. */
+				'message' => sprintf( __( '%1$d %2$s thumbnails generated successfully.', 'custom-thumbnail-generator' ), $count, $target_size ),
 			)
 		);
 	}
@@ -233,15 +267,13 @@ class CTGEN_Ajax_Handlers {
 	public function ctgen_ajax_remove_custom_size() {
 		check_ajax_referer( 'ctgen_media_actions', 'security' );
 
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( 'You are not authorized to perform this action!' );
-		}
+		self::authorize();
 
 		if ( ! isset( $_POST['slug'] ) || empty( $_POST['slug'] ) ) {
 			wp_send_json_error(
 				array(
 					'status'  => 'failed',
-					'message' => 'There has been a critical error! Plase trye again later.',
+					'message' => __( 'There has been a critical error! Please try again later.', 'custom-thumbnail-generator' ),
 				)
 			);
 		}
@@ -259,8 +291,38 @@ class CTGEN_Ajax_Handlers {
 			array(
 				'success'   => true,
 				'size_slug' => $slug,
-				'message'   => 'Thumbnail ' . $slug . ' removed',
+				/* translators: %s: thumbnail size name. */
+				'message'   => sprintf( __( 'Thumbnail %s removed', 'custom-thumbnail-generator' ), $slug ),
 			)
 		);
+	}
+
+	/**
+	 * Stops the request unless the current user may manage the plugin.
+	 *
+	 * @return void
+	 */
+	private static function authorize() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not authorized to perform this action!', 'custom-thumbnail-generator' ) );
+		}
+	}
+
+	/**
+	 * A submitted width/height: digits only, within MIN_DIMENSION..MAX_DIMENSION.
+	 *
+	 * @param string $value Submitted value.
+	 * @return int The dimension, or 0 if invalid.
+	 */
+	private static function dimension( $value ) {
+		$value = trim( (string) $value );
+
+		if ( ! preg_match( '/^\d{1,6}$/', $value ) ) {
+			return 0;
+		}
+
+		$value = (int) $value;
+
+		return ( $value >= self::MIN_DIMENSION && $value <= self::MAX_DIMENSION ) ? $value : 0;
 	}
 }
