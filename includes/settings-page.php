@@ -44,6 +44,10 @@ add_action(
 
 		ctgen_admin_page_hook( 'settings', $settings_hook );
 		ctgen_admin_page_hook( 'attachment_summary', $summary_hook );
+
+		if ( $summary_hook ) {
+			add_action( 'load-' . $summary_hook, array( 'CTGEN_Attachment_Summary', 'on_load' ) );
+		}
 	}
 );
 
@@ -83,13 +87,23 @@ function ctgen_render_settngs_page() {
 }
 
 /**
- * HTML for the Attachment Summary page (content to be defined).
+ * The Attachment Summary page controller (one instance per request).
+ *
+ * @return CTGEN_Attachment_Summary
+ */
+function ctgen_attachment_summary() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Attachment_Summary();
+	}
+
+	return $instance;
+}
+
+/**
+ * HTML for the Attachment Summary page.
  */
 function ctgen_render_attachment_summary_page() {
-	?>
-	<div class="wrap">
-		<h1><?php esc_html_e( 'Attachment Summary', 'custom-thumbnail-generator' ); ?></h1>
-		<p><?php esc_html_e( 'This page is under development.', 'custom-thumbnail-generator' ); ?></p>
-	</div>
-	<?php
+	ctgen_attachment_summary()->render();
 }

@@ -16,7 +16,10 @@ const path = require( 'path' );
 const { minify } = require( 'terser' );
 
 const ASSETS = path.resolve( __dirname, '../../assets/js' );
-const FILES = [ [ 'ctgen-webp-convert.js', 'ctgen-webp-convert.min.js' ] ];
+const FILES = [
+	[ 'ctgen-webp-convert.js', 'ctgen-webp-convert.min.js' ],
+	[ 'ctgen-attachment-summary.js', 'ctgen-attachment-summary.min.js' ],
+];
 const CHECK = process.argv.includes( '--check' );
 
 async function build( src, out ) {

@@ -96,6 +96,10 @@ require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-converter.php';
 require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-ajax-handlers.php';
 new CTGEN_Webp_Ajax_Handlers();
 
+require_once CTGEN_PLUGIN_PATH . 'class-ctgen-usage-scanner.php';
+require_once CTGEN_PLUGIN_PATH . 'class-ctgen-attachment-summary.php';
+ctgen_attachment_summary();
+
 require_once CTGEN_PLUGIN_PATH . 'class-ctgen-ajax-handlers.php';
 new CTGEN_Ajax_Handlers();
 
@@ -184,9 +188,11 @@ function ctgen_enqueue_webp_scripts( $hook_suffix ) {
 		'ctgen-webp-convert-script',
 		'CTGENWebpConvert',
 		array(
-			'ajax_url' => admin_url( 'admin-ajax.php' ),
-			'nonce'    => wp_create_nonce( 'ctgen_media_actions' ),
-			'i18n'     => array(
+			'ajax_url'        => admin_url( 'admin-ajax.php' ),
+			'nonce'           => wp_create_nonce( 'ctgen_media_actions' ),
+			// Milliseconds the browser waits for one request before reporting it as failed.
+			'request_timeout' => 120000,
+			'i18n'            => array(
 				'finding'      => __( 'Finding images to convert...', 'custom-thumbnail-generator' ),
 				/* translators: %s: image size name, e.g. "thumbnail". */
 				'findingSize'  => __( 'Finding images to convert for the %s size...', 'custom-thumbnail-generator' ),
@@ -206,8 +212,11 @@ function ctgen_enqueue_webp_scripts( $hook_suffix ) {
 				'doneErrors'   => __( 'WebP conversion finished with errors: %1$s of %2$s images processed. See the list below.', 'custom-thumbnail-generator' ),
 				/* translators: 1: number of images processed, 2: total number of images, 3: reason. */
 				'stopped'      => __( 'WebP conversion stopped after %1$s of %2$s images: %3$s', 'custom-thumbnail-generator' ),
+				/* translators: %s: reason. */
+				'notStarted'   => __( 'WebP conversion could not start: %s', 'custom-thumbnail-generator' ),
 				'auth'         => __( 'Your session has expired or you are not allowed to do this. Reload the page and try again.', 'custom-thumbnail-generator' ),
 				'network'      => __( 'The server could not be reached.', 'custom-thumbnail-generator' ),
+				'timeout'      => __( 'The server took too long to respond.', 'custom-thumbnail-generator' ),
 				'malformed'    => __( 'The server sent an unexpected response.', 'custom-thumbnail-generator' ),
 				/* translators: 1: attachment ID, 2: error message. */
 				'itemError'    => __( 'Image ID %1$s: %2$s', 'custom-thumbnail-generator' ),

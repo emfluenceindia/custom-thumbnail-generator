@@ -18,6 +18,7 @@
 	var i18n = config.i18n || {};
 
 	var REQUEST_DELAY_MS = 100;
+	var DEFAULT_REQUEST_TIMEOUT_MS = 120000;
 	var MAX_CONSECUTIVE_REQUEST_ERRORS = 3;
 	var ANNOUNCE_STEP_PERCENT = 25;
 	var MAX_LISTED_ERRORS = 50;
@@ -87,7 +88,22 @@
 		return 403 === xhr.status || '-1' === body || '0' === body;
 	}
 
+	/**
+	 * Per-request time limit, so a request that never answers cannot stall a run.
+	 *
+	 * @return {number} Milliseconds.
+	 */
+	function requestTimeout() {
+		var ms = parseInt( config.request_timeout, 10 );
+
+		return ms > 0 ? ms : DEFAULT_REQUEST_TIMEOUT_MS;
+	}
+
 	function failureReason( xhr, textStatus ) {
+		if ( 'timeout' === textStatus ) {
+			return i18n.timeout;
+		}
+
 		if ( 0 === xhr.status && 'parsererror' !== textStatus ) {
 			return i18n.network;
 		}
@@ -219,7 +235,9 @@
 			renderProgress( run );
 			renderErrors( run );
 
-			if ( 'stopped' === state ) {
+			if ( 'stopped' === state && 0 === run.total ) {
+				setStatus( format( i18n.notStarted, reason ) );
+			} else if ( 'stopped' === state ) {
 				setStatus( format( i18n.stopped, run.index, run.total, reason ) );
 			} else if ( 'complete-with-errors' === state ) {
 				setStatus( format( i18n.doneErrors, run.index, run.total ) );
@@ -328,7 +346,7 @@
 			data.size = run.size;
 		}
 
-		$.ajax( { url: config.ajax_url, type: 'POST', dataType: 'json', data: data } )
+		$.ajax( { url: config.ajax_url, type: 'POST', dataType: 'json', timeout: requestTimeout(), data: data } )
 			.done( function ( response ) {
 				handleItem( run, id, response );
 			} )
@@ -365,6 +383,7 @@
 			url: config.ajax_url,
 			type: 'POST',
 			dataType: 'json',
+			timeout: requestTimeout(),
 			data: { action: 'ctgen_webp_get_eligible_attachments', security: config.nonce }
 		} )
 			.done( function ( response ) {

@@ -105,7 +105,7 @@ FILES="$(rsync -a --dry-run --out-format='%n' "${RSYNC_FILTER[@]}" "$SRC/" "$EMP
 [ -n "$FILES" ] || die "no files selected - check .distignore."
 COUNT="$(printf '%s\n' "$FILES" | wc -l | tr -d ' ')"
 
-BAD="$(printf '%s\n' "$FILES" | grep -E '(^|/)\.|\.bak$|^v2/|(^|/)node_modules/|\.sql$|\.log$|:Zone\.Identifier$' || true)"
+BAD="$(printf '%s\n' "$FILES" | grep -E '(^|/)\.|\.bak[0-9]*$|^v2/|(^|/)node_modules/|\.sql$|\.log$|:Zone\.Identifier$' || true)"
 [ -z "$BAD" ] || die "these files must not be released - add them to .distignore:
 $BAD"
 printf '%s\n' "$FILES" | grep -qx "$(basename "$MAIN_FILE")" || die "main plugin file missing from the release list."

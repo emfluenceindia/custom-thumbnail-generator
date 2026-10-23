@@ -1,0 +1,170 @@
+MILESTONE 4 - END-TO-END HARDENING AND RELEASE VERIFICATION (2026-10-22)
+=========================================================================
+
+1. VERDICT
+----------
+Release-ready for the WebP thumbnail conversion feature, with the decisions
+and limitations in sections 4 and 5. All 40 regression rows were re-run in
+this session on the final code. Not committed to git (last commit 26c8d26).
+
+Evidence: v2/tests/results/m4-final/ (summary.txt + one log per step),
+produced by:  v2/tests/m4-run-all.sh
+Final run started 2026-10-22 13:56 UTC.
+
+
+2. CHANGES IN THIS MILESTONE
+----------------------------
+Defects found by the audit and fixed:
+- No per-request time limit in the conversion script: a request that never
+  answered stalled a run forever. Now every request has a 2-minute limit
+  (CTGENWebpConvert.request_timeout = 120000 ms). A timed-out image is listed
+  as failed ("The server took too long to respond.") and the run continues;
+  3 consecutive request errors stop the run; a timed-out discovery request
+  stops it at once.
+  Files: assets/js/ctgen-webp-convert.js (+ rebuilt .min.js), includes/init.php
+- A run that failed before any image was known said "stopped after 0 of 0
+  images". It now says "WebP conversion could not start: <reason>".
+- readme.txt overstated one point ("large media libraries do not time out").
+  Rewritten to what was verified: one image per request, 2-minute limit,
+  error/stop rules, one run at a time, memory note for very large images.
+
+Test tooling (v2/, not shipped):
+- v2/tests/m4-run-all.sh: runs every check below and saves the logs.
+- v2/tests/m3-browser.js item 23: request timeout (one hang, all hang,
+  discovery hang).
+- v2/tests/m4-timing.php: time/memory of one request for large uploads.
+- Fixed two bugs in my own runner during the run (lint step quoting; stray
+  generated .sh file in results). Neither affected the plugin.
+
+Backups taken before the run: DB export and uploads archive (scratchpad);
+.bak copies of ctgen-webp-convert.js/.min.js, m3-browser.js, m2-verify.php.
+
+
+3. REGRESSION MATRIX (all re-run now; log file in brackets)
+-----------------------------------------------------------
+Conversion core [m1.txt - 20/20]
+ 1  PASS  .jpg -> valid WebP, read back image/webp 640x480 (M1 item 1).
+ 2  PASS  .jpeg converts; a real JPEG named .png is detected by content
+          (M1 items 2, 3).
+ 3  PASS  PNG with alpha: corner alpha 127, centre 0 (M1 item 4; M2 item 12).
+ 4  PASS* Static GIF is rejected with ctgen_webp_gif_excluded, no output
+          (M1 item 5). *By user decision GIF is excluded; conversion of
+          static GIF is intentionally not offered.
+ 5  N/A   Animated GIF preservation: not offered (user decision, see 4.1).
+ 6  PASS  3-frame animated GIF (frame count verified) rejected with a clear
+          reason before any editor loads it; no flattened output (M1 6, 7).
+ 7  PASS  BMP and TIFF -> ctgen_webp_unsupported_source_type (M1 item 8).
+ 8  PASS  Garbage file -> ctgen_webp_source_corrupt, no output; truncated
+          JPEG is decoded leniently and yields a complete valid WebP, never a
+          partial file (M1 item 9).
+ 9  PASS  Missing / empty source path -> ctgen_webp_source_not_found, no
+          PHP warnings (M1 item 10).
+ 10 PASS  SIMULATED editor without WebP -> ctgen_webp_output_unsupported; no
+          editors -> ctgen_webp_editor_unavailable; real env Imagick with WebP
+          (M1 item 12; M2 item 16 through the endpoint).
+ 11 PASS  Destination = source, via "..", via symlinked folder, non-.webp:
+          all refused (M1 item 13).
+ 12 PASS  3 repeats: same file name, no new files, unrelated file untouched
+          (M1 item 15; M2 items 15, 30).
+ 13 PASS  Real read-only folder and SIMULATED save error never report
+          success; an existing valid WebP survives a failed and a corrupt
+          write (M1 items 16, 17).
+ 14 PASS  12 source fixtures (md5+size+mtime), 17 attachment fixtures
+          (files + all post meta) unchanged after every scenario (M1 18, 19;
+          M2 item 20).
+
+Backend operations [m2.txt - 26/26, m2-empty.txt]
+ 15 PASS  Discovery returns only JPEG/PNG, equal to an independent DB query;
+          PDF, GIF and WebP attachments excluded (M2 item 3).
+ 16 PASS  REAL empty library (attachment rows removed, files untouched) ->
+          {"success":true,"data":{"ids":[]}}; DB re-imported, CHECKSUM TABLE
+          identical.
+ 17 PASS  Bad/missing nonce -> -1, empty body, no files (M2 items 1, 5).
+ 18 PASS  Subscriber -> "You are not authorized...", no files (M2 2, 6).
+ 19 PASS  Non-existent ID, ID 0, PDF, plain post -> structured errors
+          (M2 items 7, 8).
+ 20 PASS  all_sizes converts core, theme-style and custom sizes plus the
+          full-size file (and scaled + original for large uploads)
+          (M2 items 9, 26, 27).
+ 21 PASS  Unknown slug -> ctgen_webp_unknown_size, no file change (M2 10).
+ 22 PASS  Registered size without a file -> skipped (M2 item 11).
+ 23 PASS  Missing thumbnail skipped and corrupt thumbnail failed while the
+          other sizes convert (M2 items 13, 14).
+ 24 PASS  37 responses scanned: no server paths; paths sent as parameters
+          are rejected and never echoed (M2 items 17, 18).
+ 25 PASS  Counts equal the per-size tally (M2 item 19; UI = raw responses in
+          browser items 7, 8).
+ 26 PASS* UPDATED RULE (user decision: full-size copies). The original is
+          converted only as its own "full" entry, never as a thumbnail; a
+          150x150 original gets no thumbnail entry (M2 item 21).
+
+UI and progress, real admin page in headless Chromium [m3-browser.txt - 18/18]
+ 27 PASS  Bulk button + WebP button on all 6 default rows and the custom
+          row; all functional (browser items 1-3, 8, 12).
+ 28 PASS  Only WebP requests during WebP runs; no regenerate/remove request
+          or dialog (browser items 4, 8).
+ 29 PASS* Legacy regenerate/remove [legacy-compare.txt] vs the pre-M3
+          capture: requests, dialogs, legacy script bytes, row markup, bulk
+          regenerate sequence, row regenerate and remove sequences: SAME.
+          Visual differences, each traced: user-requested dark gray colour
+          (#55ce0b -> #3c434a), user-requested help text and icon padding,
+          GIF notice moved to the WebP section, script ?ver 1.0.2 -> 1.1.
+          Regenerate button pixel-identical; remove button pixel-identical
+          after a 1 px sub-pixel shift.
+ 30 PASS  Terminal states: success, partial failure (complete-with-errors),
+          empty library, malformed JSON, network loss, expired session,
+          malformed discovery, request timeout (browser 6, 7, 10, 23).
+ 31 PASS  Double click + programmatic clicks mid-run: one run (item 9).
+ 32 PASS  Add/remove size + forced table reload: WebP buttons work, one
+          delegated handler, no console errors (items 12, 13).
+ 33 PASS  Keyboard: Tab reaches bulk and row buttons, Enter/Space start
+          runs, visible focus ring (item 14).
+ 34 PASS  Live region changed 5 times for 25 images (item 16).
+ 35 PASS  Page loads ctgen-webp-convert.min.js?ver=1.1; served bytes =
+          fresh build of the source; source not loaded (item 17).
+
+Cross-cutting
+ 36 PASS  php -l: 13/13 PHP files clean [php-lint.txt].
+ 37 PASS  PHPCS (.phpcs.xml.dist, whole plugin): exit 0 [phpcs.txt].
+ 38 PASS  Plugin Check on the 30-file release build: "No errors found"
+          [plugin-check-release.txt]. The git working copy also lists the
+          dev-only .gitignore, .distignore, v2/deploy/svn-release.sh and
+          v2/tests/m4-run-all.sh; all are excluded from the release.
+ 39 PASS  No runtime PHP/JS references v2/, tooling or the readable JS
+          source; release manifest has no v2/, tests, .bak or hidden files
+          [dev-tooling.txt]; browser item 17 confirms only .min.js loads.
+ 40 PASS  readme.txt reviewed line by line against this run (see 4.4).
+
+Also re-run: JS syntax (source, .min, legacy .min) and build drift: clean;
+admin menu check 8/8 [menu-check.txt].
+
+Source preservation: every harness compares wp-content/uploads (md5 of every
+file) before/after, plus real attachment meta and the custom-size option:
+identical in all runs. uploads also compared file-by-file with the archive
+taken before this milestone: identical (244 files). Attachments 25,
+temporary users 0, fixture files 0.
+
+
+4. DECISIONS AND LIMITATIONS
+----------------------------
+4.1  GIF excluded (user decision). Rows 4-5 are therefore "rejected
+     clearly" / not offered, not "converted".
+4.2  Full-size copies (user decision) changed the M2 rule behind row 26.
+4.3  Simulated, not real: no-WebP editor (row 10), editor save failure
+     (row 13), network loss / malformed JSON / expired session / request
+     timeout (row 30). This server supports WebP; failures were injected.
+4.4  readme.txt: the WebP sections describe only behaviour verified here.
+     The older FAQ entries (multisite support, single-size regeneration,
+     deletion of theme sizes) predate this feature and were not re-tested
+     in this session.
+4.5  Measured on this server (Lando, PHP 7.4, Imagick, 91 s / 1 GB limits):
+     one request for a 6000x4000 upload took 5.2 s and ~220 MB. Hosts with
+     low memory limits may fail such images; they are then listed as
+     failed and the run continues (failure path verified with injected
+     errors, not with a real out-of-memory).
+4.6  Not tested: other browsers than Chromium 130, multisite, media
+     offloaded to S3/CDN, two administrators converting at the same time
+     (the converter's temp-file + atomic rename keeps each write whole, but
+     concurrency itself was not exercised).
+4.7  Plugin Check on the git working copy reports dev-only files (see row
+     38). Release via v2/deploy/svn-release.sh, which excludes them.

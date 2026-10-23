@@ -10,23 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
-<table class="ctgen-plugin-header-table">
-	<tr>
-		<td class="ctgen-plugin-header-logo">
-			<img src="<?php /* phpcs:disable PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage */ echo esc_attr( CTGEN_LOGO ); ?>" alt="Custom Thumbnail Generator" />
-		</td>
-		<td class="ctgen-plugin-header-title">
-			<h1>
-				<?php esc_html_e( 'Custom Thumbnail Generator', 'custom-thumbnail-generator' ); ?>
-				<hr />
-				<span><?php esc_html_e( 'The plugin registers and integrates all defined custom thumbnail sizes into the WordPress environment. They remain globally accessible and functional, providing a consistent image handling system that persists across all themes. In addition to that, it offers thumbnail regeneration capability as well.', 'custom-thumbnail-generator' ); ?></span>
-			</h1>
-			<p style="font-size:14px;">
-				
-			</p>
-		</td>
-	</tr>
-</table>    
+<?php CTGEN_Functions::ctgen_render_page_header( __( 'Custom Thumbnail Generator', 'custom-thumbnail-generator' ) ); ?>
 <div id="ctgen-action-container">
 	<div id="ctgen-form-div">
 		<fieldset class="ctgen-form-container">

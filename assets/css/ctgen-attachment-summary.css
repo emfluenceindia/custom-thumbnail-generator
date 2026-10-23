@@ -1,0 +1,234 @@
+/* Attachment Summary page. Progress bar matches the WebP conversion bar. */
+
+#ctgen-usage-ui {
+	margin: 10px 0 16px;
+}
+
+#ctgen-usage-ui p {
+	margin: 6px 0;
+}
+
+#ctgen-usage-progressbar {
+	margin: 10px 0;
+	width: 100%;
+	max-width: 760px;
+	height: 30px;
+	background: #e0e0e0;
+	position: relative;
+}
+
+#ctgen-usage-progress {
+	width: 0%;
+	height: 30px;
+	background: #2271b1;
+	transition: width 0.3s;
+}
+
+#ctgen-usage-percentage {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	line-height: 30px;
+	text-align: center;
+	font-weight: 500;
+	color: #1d2327;
+}
+
+#ctgen-usage-percentage.ctgen-usage-percentage-light {
+	color: #fff;
+}
+
+#ctgen-usage-status {
+	font-weight: 500;
+}
+
+#ctgen-usage-errors {
+	margin: 6px 0 0 18px;
+	list-style: disc;
+	color: #8a2424;
+}
+
+/* Column widths: narrow Type so Attachment (the widest content) sits further left. */
+.ctgen-attachment-summary .column-image {
+	width: 18%;
+}
+
+.ctgen-attachment-summary .column-type {
+	width: 9%;
+}
+
+.ctgen-attachment-summary .column-attachment {
+	width: 37%;
+}
+
+.ctgen-attachment-summary .column-size,
+.ctgen-attachment-summary .column-status {
+	width: 18%;
+}
+
+.ctgen-image-cell {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+}
+
+.ctgen-image-preview img {
+	width: 60px;
+	height: 60px;
+	object-fit: cover;
+	display: block;
+}
+
+.ctgen-image-name strong {
+	display: block;
+}
+
+.ctgen-file-name,
+.ctgen-usage-meta,
+.ctgen-usage-when {
+	color: #646970;
+	font-size: 12px;
+	word-break: break-all;
+}
+
+.ctgen-usage-when {
+	display: block;
+}
+
+.ctgen-usage-list summary,
+.ctgen-size-list summary {
+	cursor: pointer;
+}
+
+.ctgen-usage-list ul,
+.ctgen-size-list ul {
+	margin: 4px 0 4px 16px;
+	list-style: disc;
+}
+
+.ctgen-usage-unscanned,
+.ctgen-usage-none {
+	display: block;
+}
+
+.ctgen-usage-row-error {
+	display: block;
+	color: #8a2424;
+}
+
+/* Single image viewer (popup) reused for every "View" link. */
+.ctgen-image-viewer {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.75);
+}
+
+.ctgen-image-viewer[hidden] {
+	display: none;
+}
+
+.ctgen-image-viewer-box {
+	background: #fff;
+	max-width: 90vw;
+	max-height: 90vh;
+	padding: 12px 16px 16px;
+	box-sizing: border-box;
+	overflow: auto;
+	box-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
+}
+
+.ctgen-image-viewer-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 8px;
+}
+
+.ctgen-image-viewer-head h2 {
+	margin: 0;
+	font-size: 16px;
+	word-break: break-all;
+}
+
+.ctgen-image-viewer-close {
+	font-size: 20px !important;
+	line-height: 1 !important;
+	min-height: 32px;
+}
+
+.ctgen-image-viewer-img {
+	display: block;
+	max-width: 100%;
+	max-height: 75vh;
+	margin: 0 auto;
+}
+
+.ctgen-image-viewer-about {
+	margin: 8px 0 0;
+	color: #646970;
+	text-align: center;
+}
+
+body.ctgen-image-viewer-open {
+	overflow: hidden;
+}
+
+/* Attachment cell: label + refresh icon on one line. */
+.ctgen-usage-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 4px;
+}
+
+.ctgen-usage-refresh {
+	border: 0;
+	background: none;
+	padding: 0;
+	margin: 0;
+	cursor: pointer;
+	color: #2271b1;
+	line-height: 1;
+	border-radius: 2px;
+}
+
+.ctgen-usage-refresh .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.ctgen-usage-refresh:hover {
+	color: #135e96;
+}
+
+.ctgen-usage-refresh:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px #2271b1;
+}
+
+.ctgen-usage-refresh:disabled {
+	cursor: default;
+	opacity: 0.6;
+}
+
+.ctgen-usage-cell.is-busy .ctgen-usage-refresh .dashicons {
+	animation: ctgen-usage-spin 1s linear infinite;
+}
+
+@keyframes ctgen-usage-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ctgen-usage-cell.is-busy .ctgen-usage-refresh .dashicons {
+		animation: none;
+	}
+}

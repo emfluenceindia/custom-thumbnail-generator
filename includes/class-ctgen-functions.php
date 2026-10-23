@@ -86,6 +86,32 @@ class CTGEN_Functions {
 	}
 
 	/**
+	 * Renders the plugin header (logo, title, description) shared by all plugin pages.
+	 *
+	 * @param string $title Translated page heading.
+	 * @return void
+	 */
+	public static function ctgen_render_page_header( $title ) {
+		?>
+		<table class="ctgen-plugin-header-table">
+			<tr>
+				<td class="ctgen-plugin-header-logo">
+					<img src="<?php echo esc_url( CTGEN_LOGO ); ?>" alt="<?php esc_attr_e( 'Custom Thumbnail Generator', 'custom-thumbnail-generator' ); ?>" /><?php // phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage -- The plugin's own logo from its assets folder; not a media library image. ?>
+				</td>
+				<td class="ctgen-plugin-header-title">
+					<h1>
+						<?php echo esc_html( $title ); ?>
+						<hr />
+						<span><?php esc_html_e( 'The plugin registers and integrates all defined custom thumbnail sizes into the WordPress environment. They remain globally accessible and functional, providing a consistent image handling system that persists across all themes. In addition to that, it offers thumbnail regeneration capability as well.', 'custom-thumbnail-generator' ); ?></span>
+					</h1>
+					<p style="font-size:14px;"></p>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
 	 * Renders the per-size "convert to WebP" button used in both size tables.
 	 *
 	 * Uses its own class (ctgen-webp-convert-size) so it can never trigger the
