@@ -68,3 +68,119 @@
 #ctgen-tables-column .ctgen-form-container {
 	padding-right: 0;
 }
+
+/*
+ * "Automatic WebP for new images" card: the first thing on the Settings page.
+ * Green accent when on, amber when off, so the current choice is obvious.
+ */
+.ctgen-auto-card {
+	margin: 16px 0 20px;
+	padding: 16px 20px 12px;
+	max-width: 1100px;
+	box-sizing: border-box;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 6px solid #dba617;
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.ctgen-auto-card.is-on {
+	border-left-color: #00a32a;
+	background: #f6fbf7;
+}
+
+.ctgen-auto-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.ctgen-auto-head .dashicons {
+	width: 28px;
+	height: 28px;
+	font-size: 28px;
+	color: #dba617;
+}
+
+.ctgen-auto-card.is-on .ctgen-auto-head .dashicons {
+	color: #00a32a;
+}
+
+.ctgen-auto-head h2 {
+	margin: 0;
+	font-size: 1.4em;
+}
+
+.ctgen-auto-badge {
+	padding: 2px 10px;
+	border-radius: 10px;
+	background: #f0c33c;
+	color: #1d2327;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.ctgen-auto-card.is-on .ctgen-auto-badge {
+	background: #00a32a;
+	color: #fff;
+}
+
+.ctgen-auto-lead {
+	margin: 10px 0 12px;
+	font-size: 14px;
+	max-width: 80ch;
+}
+
+.ctgen-auto-form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px 20px;
+	padding: 12px 14px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.ctgen-auto-card.is-on .ctgen-auto-form {
+	background: #edfaef;
+	border-color: #b8e6bf;
+}
+
+.ctgen-auto-control {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+}
+
+.ctgen-auto-control label {
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.ctgen-auto-card .ctgen-auto-cron-warning {
+	margin: 12px 0 0;
+}
+
+.ctgen-auto-queue {
+	margin: 10px 0 0;
+	font-weight: 500;
+}
+
+.ctgen-auto-points {
+	margin: 12px 0 0 18px;
+	list-style: disc;
+}
+
+.ctgen-auto-points li {
+	margin-bottom: 3px;
+}
+
+.ctgen-auto-more {
+	margin: 12px 0 0;
+}

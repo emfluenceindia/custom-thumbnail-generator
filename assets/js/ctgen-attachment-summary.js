@@ -10,7 +10,9 @@
  * Endpoints:
  *   ctgen_usage_get_ids   -> { ids: [ ... ] }
  *   ctgen_usage_scan      -> { results: { id: { count, html } }, errors: { id: message } }
- *   ctgen_webp_set_serve  -> { state: 'on'|'off', html }  ("Serve WebP" switch)
+ *   ctgen_webp_set_serve  -> { state: 'on'|'off', html }  ("Serve WebP" switch of one image)
+ *   ctgen_webp_serve_all  -> step 'start': { state, total }
+ *                            step 'batch': { processed, served, skipped, next, done, cells: { id: html } }
  */
 ( function ( $ ) {
 	'use strict';
@@ -26,6 +28,7 @@
 	var MAX_LISTED_ERRORS = 50;
 
 	var running = false;
+	var serveAllRunning = false;
 	var ui = {};
 
 	/**
@@ -472,7 +475,7 @@
 		var label = $button.text();
 		var $status = $cell.find( '.ctgen-webp-regenerate-status' );
 		var $progress = $( '<div class="ctgen-webp-progress"><progress max="1" value="0"></progress><span class="ctgen-webp-progress-text" role="status" aria-live="polite"></span></div>' );
-		var job = { converted: 0, failed: 0, errors: [], html: null, consecutiveErrors: 0 };
+		var job = { converted: 0, failed: 0, errors: [], html: null, serveHtml: null, consecutiveErrors: 0 };
 
 		if ( ! id || $button.prop( 'disabled' ) ) {
 			return;
@@ -493,6 +496,10 @@
 				message = format( i18n.regenSome, job.converted, job.failed ) + ' ' + job.errors.join( '; ' );
 			} else {
 				message = format( i18n.regenDone, job.converted );
+			}
+
+			if ( job.serveHtml ) {
+				replaceServeCell( id, job.serveHtml );
 			}
 
 			if ( job.html ) {
@@ -527,6 +534,7 @@
 
 					if ( response && true === response.success && data && 'string' === typeof data.html ) {
 						job.html = data.html;
+						job.serveHtml = 'string' === typeof data.serve_html ? data.serve_html : job.serveHtml;
 						job.consecutiveErrors = 0;
 						if ( 'converted' === data.outcome ) {
 							job.converted++;
@@ -580,8 +588,8 @@
 
 	/**
 	 * Turns "serve WebP" on or off for one image, then swaps in the refreshed
-	 * cell and announces the result. On failure the switch goes back to its
-	 * previous position.
+	 * "Serve WebP" cell and announces the result. On failure the switch goes
+	 * back to its previous position.
 	 *
 	 * @param {HTMLElement} input The changed "Serve WebP" switch.
 	 */
@@ -589,7 +597,7 @@
 		var $input = $( input );
 		var id = parseInt( $input.attr( 'data-id' ), 10 );
 		var state = $input.prop( 'checked' ) ? 'on' : 'off';
-		var $cell = $input.closest( '.ctgen-webp-cell' );
+		var $cell = $input.closest( '.ctgen-webp-serve-cell' );
 		var $message = $cell.find( '.ctgen-webp-serve-message' );
 
 		if ( ! id ) {
@@ -621,6 +629,165 @@
 			} )
 			.fail( function ( xhr, textStatus ) {
 				failed( isAuthFailure( xhr ) ? i18n.auth : failureReason( xhr, textStatus ) );
+			} );
+	}
+
+	/**
+	 * Replaces the "Serve WebP" cell of one image, if it is on the current
+	 * page. While the switch for all images runs, the new cell's switch is
+	 * locked like the others.
+	 *
+	 * @param {number|string} id   Attachment ID.
+	 * @param {string}        html Server-rendered, escaped cell HTML.
+	 * @return {jQuery} The new cell (may be empty).
+	 */
+	function replaceServeCell( id, html ) {
+		var $old = $( '#ctgen-webp-serve-cell-' + parseInt( id, 10 ) );
+		var $new;
+
+		if ( ! $old.length ) {
+			return $();
+		}
+
+		$new = $( $.parseHTML( html ) );
+		$old.replaceWith( $new );
+
+		if ( serveAllRunning ) {
+			lockSwitches( $new );
+		}
+
+		return $new;
+	}
+
+	/**
+	 * Disables every usable switch inside $scope, remembering which ones were
+	 * usable so unlockSwitches() gives back exactly those.
+	 *
+	 * @param {jQuery} $scope Where to look.
+	 */
+	function lockSwitches( $scope ) {
+		$scope.find( '.ctgen-switch' ).addBack( '.ctgen-switch' ).filter( ':not(:disabled)' ).addClass( 'ctgen-switch-locked' ).prop( 'disabled', true );
+	}
+
+	function unlockSwitches() {
+		$( '.ctgen-switch-locked' ).removeClass( 'ctgen-switch-locked' ).prop( 'disabled', false );
+	}
+
+	function warnBeforeLeaving( event ) {
+		event.preventDefault();
+		event.returnValue = '';
+		return '';
+	}
+
+	/**
+	 * The switch for all images (column header): after a confirmation,
+	 * stores the new position, then switches every image in batches,
+	 * showing progress above the table and refreshing the visible rows. A
+	 * failing request is retried; after three failures in a row the run
+	 * stops and says so.
+	 *
+	 * @param {HTMLElement} input The changed header switch.
+	 */
+	function serveAll( input ) {
+		var state = $( input ).prop( 'checked' ) ? 'on' : 'off';
+		var $switches = $( '.ctgen-webp-serve-all-toggle' );
+		var $status = $( '#ctgen-webp-serve-all-status' );
+		var run = { total: 0, handled: 0, served: 0, skipped: 0, consecutiveErrors: 0 };
+		var visible = $( '#the-list .ctgen-webp-serve-cell' ).map( function () {
+			return parseInt( String( this.id ).replace( 'ctgen-webp-serve-cell-', '' ), 10 );
+		} ).get().filter( function ( id ) {
+			return id > 0;
+		} );
+
+		if ( serveAllRunning || ! window.confirm( 'on' === state ? i18n.allConfirmOn : i18n.allConfirmOff ) ) {
+			$( input ).prop( 'checked', 'on' !== state );
+			return;
+		}
+
+		serveAllRunning = true;
+		$switches.prop( 'checked', 'on' === state );
+		lockSwitches( $( document.body ) );
+		$( window ).on( 'beforeunload', warnBeforeLeaving );
+		$status.text( i18n.allStarting );
+
+		function end( message ) {
+			serveAllRunning = false;
+			$( window ).off( 'beforeunload', warnBeforeLeaving );
+			unlockSwitches();
+			$status.text( message );
+		}
+
+		function batch( after ) {
+			request( { action: 'ctgen_webp_serve_all', step: 'batch', state: state, after: after, visible: visible } )
+				.done( function ( response ) {
+					var data = response && response.data;
+					var id;
+
+					if ( ! response || true !== response.success || ! data || 'number' !== typeof data.processed || 'number' !== typeof data.next ) {
+						end( format( i18n.allStopped, run.handled, run.total, data && data.message ? data.message : i18n.malformed ) );
+						return;
+					}
+
+					run.consecutiveErrors = 0;
+					run.handled += data.processed;
+					run.served += data.served;
+					run.skipped += data.skipped;
+
+					for ( id in data.cells ) {
+						if ( Object.prototype.hasOwnProperty.call( data.cells, id ) && 'string' === typeof data.cells[ id ] ) {
+							replaceServeCell( id, data.cells[ id ] );
+						}
+					}
+
+					if ( data.done ) {
+						end( 'on' === state ? format( i18n.allDoneOn, run.served, run.skipped ) : format( i18n.allDoneOff, run.handled ) );
+						// Present only while automatic WebP is off.
+						$( '#ctgen-webp-auto-hint' ).prop( 'hidden', 'on' !== state );
+						return;
+					}
+
+					$status.text( format( i18n.allProgress, Math.min( run.handled, run.total ), run.total ) );
+					window.setTimeout( function () {
+						batch( data.next );
+					}, REQUEST_DELAY_MS );
+				} )
+				.fail( function ( xhr, textStatus ) {
+					if ( isAuthFailure( xhr ) ) {
+						end( format( i18n.allStopped, run.handled, run.total, i18n.auth ) );
+						return;
+					}
+
+					run.consecutiveErrors++;
+
+					if ( run.consecutiveErrors >= MAX_CONSECUTIVE_REQUEST_ERRORS ) {
+						end( format( i18n.allStopped, run.handled, run.total, failureReason( xhr, textStatus ) ) );
+						return;
+					}
+
+					window.setTimeout( function () {
+						batch( after );
+					}, REQUEST_DELAY_MS );
+				} );
+		}
+
+		request( { action: 'ctgen_webp_serve_all', step: 'start', state: state } )
+			.done( function ( response ) {
+				var data = response && response.data;
+
+				if ( response && true === response.success && data && 'number' === typeof data.total ) {
+					run.total = data.total;
+					$status.text( format( i18n.allProgress, 0, run.total ) );
+					batch( 0 );
+					return;
+				}
+
+				// Nothing was stored: the switch goes back.
+				$switches.prop( 'checked', 'on' !== state );
+				end( format( i18n.serveError, data && data.message ? data.message : i18n.malformed ) );
+			} )
+			.fail( function ( xhr, textStatus ) {
+				$switches.prop( 'checked', 'on' !== state );
+				end( format( i18n.serveError, isAuthFailure( xhr ) ? i18n.auth : failureReason( xhr, textStatus ) ) );
 			} );
 	}
 
@@ -724,9 +891,14 @@
 			regenerateWebp( this );
 		} );
 
-		// Delegated: WebP cells are replaced after every switch change.
+		// Delegated: Serve WebP cells are replaced after every switch change.
 		$( document ).on( 'change', '.ctgen-webp-serve-toggle', function () {
 			toggleServe( this );
+		} );
+
+		// The header and footer of the table each hold the switch for all images.
+		$( document ).on( 'change', '.ctgen-webp-serve-all-toggle', function () {
+			serveAll( this );
 		} );
 
 		// Delegated: cells are replaced after every scan.

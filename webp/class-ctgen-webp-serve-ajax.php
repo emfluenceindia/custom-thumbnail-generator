@@ -53,7 +53,7 @@ class CTGEN_Webp_Serve_Ajax {
 
 	/**
 	 * AJAX: turns serving on or off for one image and returns the new state
-	 * and the refreshed "WebP status" cell.
+	 * and the refreshed "Serve WebP" cell.
 	 *
 	 * @return void
 	 */
@@ -81,7 +81,7 @@ class CTGEN_Webp_Serve_Ajax {
 		wp_send_json_success(
 			array(
 				'state' => $result['state'],
-				'html'  => CTGEN_Attachment_Summary::render_webp_cell( $id ),
+				'html'  => CTGEN_Attachment_Summary::render_serve_cell( $id ),
 			)
 		);
 	}

@@ -1,0 +1,185 @@
+# Pending items: "Serve WebP" feature (status on 31 Oct 2026)
+
+Plugin: Custom Thumbnail Generator. Feature: show visitors WebP copies instead of JPEG/PNG.
+Source plan: `v2/replacement/replacement-skill.md` (milestones R1–R4, §10).
+
+## 1. Where things stand
+
+| Part | Status | Notes |
+|---|---|---|
+| R1: manifest + URL mapper | Done | Tested, PHPCS clean |
+| R2: front-end replacement, health check, lifecycle | Done | 166 tests / 494 assertions pass |
+| Per-image "Serve WebP" switch (start of R3) | Done | Confirmed working in the browser |
+| Rest of R3 | **Pending** | Section 4 |
+| R4: verification | **Pending** | Section 5 |
+
+**Is the plugin safe to use today?** Yes, with the limits listed below. Serving is off for every image until an admin turns it on. While an image is serving, every size without a valid WebP keeps its original URL. A WebP removed outside the plugin is noticed by the daily health check, or straight away when the image's files change.
+
+## 2. Summary of pending items and their impact
+
+Severity: **High** = can mislead users or leave data behind on a live site. **Medium** = a real gap in function or workflow. **Low** = convenience or housekeeping.
+
+| # | Item | Type | Severity | Impact if left undone |
+|---|---|---|---|---|
+| D1 | WebP served without a Content-Type | Decision | Medium | Decides how R4 behaves on servers like this one |
+| D2 | Fix MIME type on this dev server | Decision | Low | Dev only. Browsers show the images anyway |
+| D3 | "Serve WebP for all ready images" | Decision | Low | Changes the size of the bulk step |
+| M1 | Block editor load/save check | Manual test | Medium | Not yet proven that saving a post never stores `.webp` URLs |
+| P1 | Uninstall cleanup | R3 build | **High** | Deleting the plugin leaves serving data in the database |
+| P2 | readme is out of date | R3 build | **High** | The readme says the plugin never changes the displayed image, which is now wrong |
+| P3 | Bulk Serve / Stop serving | R3 build | Medium | Images can only be switched one at a time |
+| P4 | "Regenerate this size" | R3 build | Medium | A broken or missing WebP size stays on the original until a full re-conversion |
+| P5 | Remaining R3 tests (40, 43–46, 62, 63, 65) | R3 build | Medium | P1–P4 would ship untested |
+| P6 | R4: "Serving on N of M places" + reachability check | R4 build | Medium | No way to see where originals still appear, and a blocked WebP URL isn't caught |
+| H1 | 64 `.bak` files and no git | Housekeeping | Low | Clutter only. They never ship |
+| H2 | Coverage can't be measured | Environment | Low | No xdebug/pcov in the container |
+| H3 | Only tested on PHP 7.4 | Environment | Low | The plugin claims PHP 7.0+ |
+
+## 3. Decisions needed before building
+
+### D1: servers that send WebP without a Content-Type
+
+- **What:** this Lando server returns `.webp` files with no `Content-Type` header, because `/etc/mime.types` has no entry for `image/webp`. Browsers still display the images. Some CDNs and strict proxies may not.
+- **Where it matters:** R4's reachability check (P6).
+- **Options:**
+  - **(a) Recommended:** warn the admin, show the one-line server fix, and keep serving.
+  - **(b)** Treat the image as unreachable and stop serving it until the server is fixed.
+- **Impact:** (a) keeps WebP working on most hosts, with a visible warning. (b) is safer on unusual set-ups, but would switch serving off on this dev server and on any host with the same gap.
+
+### D2: fix this dev server
+
+- **What:** add `AddType image/webp .webp` to the site's `.htaccess`, outside the `# BEGIN WordPress` block.
+- **Impact:** a site change, not plugin code, and it doesn't ship. It makes the dev server behave like a correctly configured host, so R4 can be tested properly.
+
+### D3: one-click "all ready images"
+
+- **What:** besides bulk for the selected rows, a button that switches on every image that has a valid WebP, working through the library in batches.
+- **Impact:** about one extra endpoint plus tests. Very useful for large libraries. Each batch is capped, so there is no timeout risk.
+
+## 4. Pending R3 work, step by step (recommended order)
+
+### Step 1 (P1): uninstall cleanup. Do this first.
+
+- **Today:** `uninstall.php` removes only the usage-scan data (`_ctgen_usage`, `_ctgen_usage_count`, the per-page user setting), and only on the current site.
+- **Missing:**
+  - post meta `_ctgen_webp_serve` (one row per serving image)
+  - option `ctgen_webp_health_cursor`
+  - any leftover `ctgen_webp_health_check` cron event
+  - every site of a multisite network, not just the current one
+- **Impact if not done:**
+  - Deleting the plugin leaves rows behind. They're harmless on their own, but WordPress.org reviewers expect a clean uninstall.
+  - If the plugin is installed again, images start serving WebP with no admin action, which would surprise the site owner.
+- **Kept on purpose:** WebP files, image files and custom sizes. This matches the current documented behaviour.
+- **Usage:** none. It runs automatically when an admin clicks **Delete** on the Plugins screen.
+- **Tests:** 62, 63. They must snapshot and restore real site data, because the suite runs on the real database.
+
+### Step 2 (P2): readme and FAQ
+
+- **Today:** `readme.txt` line 44 says *"The plugin creates the WebP files but does not change which image WordPress displays."* That has been false since R2.
+- **To add:**
+  - How to turn serving on (per image, bulk)
+  - Browser support (all current browsers; WebP-only, no `<picture>` fallback)
+  - Caches and CDNs: purge after switching. The `ctgen_webp_serving_changed` action exists for cache plugins
+  - Hooks:
+    - `ctgen_webp_should_replace`
+    - `ctgen_webp_serving_changed`
+    - `ctgen_webp_files_changed`
+    - `ctgen_webp_health_check_batch`
+    - `ctgen_webp_health_check_interval`
+  - The remaining 404 risk: a WebP deleted by hand is served until the next health check or file change. The instant fix is to switch the image off and on again
+  - What uninstall removes and what it keeps
+- **Impact if not done:** users and reviewers get wrong information, and nobody knows to purge their caches.
+- **Usage:** documentation only.
+
+### Step 3 (P3, and D3 if approved): bulk Serve / Stop serving
+
+- **What:** two bulk actions on the Attachment Summary table, done in small batches with a progress bar. The same nonce, capability and rules as the switch. Images with nothing to serve are listed as skipped with the reason.
+- **Impact if not done:** an admin with hundreds of images has to click hundreds of switches.
+- **Usage:**
+  1. Go to **Custom Thumbnail Generator > Attachment Summary**.
+  2. Tick the images.
+  3. Choose **Serve WebP** or **Stop serving WebP** from Bulk actions, then click **Apply**.
+  4. Keep the page open until the progress bar finishes.
+  5. Purge the page cache.
+- **Tests:** 43–46.
+
+### Step 4 (P4): "Regenerate this size"
+
+- **What:** a button beside each skipped size, shown when the reason is `missing`, `invalid` or `dimension_mismatch`. It re-converts that one size (the conversion engine's `force`), then rebuilds the image's serving data.
+- **Not shown for:**
+  - `larger_than_source`: re-converting gives the same result
+  - `not_owned`: the plugin must never overwrite another item's file
+  - `source_missing`: there is nothing to convert from
+- **Impact if not done:** a size that went missing or broken keeps showing the JPEG/PNG. Nothing breaks, but WebP isn't used there until someone runs the full conversion again.
+- **Usage:**
+  1. Open the image's **WebP status** cell.
+  2. Expand the skipped-sizes list.
+  3. Click **Regenerate** beside the size.
+- **Tests:** 40, 65.
+
+### Step 5: quality gates and report
+
+Run all of these, then write `v2/replacement/r3-report.md`. After that, test it in the browser.
+- full PHPUnit suite
+- PHPCS (0 errors / 0 warnings)
+- Plugin Check (no new issues against the baseline)
+- `node v2/tools/build-js.js --check`
+- uploads md5 map unchanged (proves no image file was touched)
+
+## 5. R4: verification (after R3)
+
+### Step 6 (P6a): "Serving WebP on N of M places"
+
+- **What:** uses the existing usage scanner to look at each place an image appears and report whether visitors actually get WebP there. Where they don't, it gives the reason, for example:
+  - a URL hard-coded by a page builder
+  - a link to the media file
+  - CSS backgrounds
+  - a cached page
+- **Impact if not done:** admins see "Serving WebP" but can't tell which pages still show originals. That's what happened in the first manual test, where serving was simply off.
+- **Usage:** read the new line in the **WebP status** cell, and expand it for the list of places.
+
+### Step 7 (P6b): reachability check
+
+- **What:** asks the server for each served WebP URL (`HEAD`, retrying with `GET` on a 405/501 reply). Applies D1's rule to the Content-Type. Marks unreachable sizes so they fall back to the original.
+- **Impact if not done:** if a server rule, security plugin or CDN blocks `.webp`, visitors get broken images while the admin sees "Serving". This is the main remaining 404 risk.
+- **Usage:** automatic when serving is switched on and during the health check. The result appears in the status cell.
+
+## 6. Manual test still owed (M1)
+
+The tests checked the stored content directly. The editor round trip needs a logged-in browser, and creating login credentials for automation was not allowed.
+
+1. Switch serving on for an image used in a page.
+2. Open that page in the block editor, change nothing, and click **Update**.
+3. In the database (or **Code editor** view), confirm the content still has the `.jpg`/`.png` URL, not `.webp`.
+
+- **Expected:** no `.webp` in the stored content. The plugin only rewrites output for visitors.
+- **Impact if it fails:** turning serving off would no longer restore the originals in that post. That would be a High-severity bug, fixed before continuing.
+
+## 7. Housekeeping
+
+- **H1, `.bak` files:**
+  - 64 backup files sit next to edited files. `.distignore` excludes them from releases, so they never ship.
+  - Without git they are the only way to roll back.
+  - Options: keep them, archive them to a `.tar.gz` and then delete, or put the plugin under git (best).
+  - Deleting them can't be undone, so this waits for your choice.
+- **H2, coverage:** no xdebug or pcov in the container, so line coverage is reported as BLOCKED. Every behaviour has a named test, and mutation checks were run instead.
+- **H3, PHP versions:** tests run on PHP 7.4.33. The code avoids syntax newer than 7.0, but it hasn't been run on 7.0–7.3 or on PHP 8.x. Worth a run on PHP 8.2+ before release.
+
+## 8. Recommended order at a glance
+
+1. Answer D1–D3 (a simple "go with the recommendations" is enough).
+2. Do M1, the 2-minute editor check.
+3. Step 1: uninstall cleanup.
+4. Step 2: readme and FAQ.
+5. Step 3: bulk actions.
+6. Step 4: "Regenerate this size".
+7. Step 5: quality gates, report, browser test.
+8. Steps 6–7: R4 verification.
+9. Before release: PHP 8.x run, decide on the `.bak` files / git.
+
+## 9. Update: bulk switch built (31 Oct 2026, later the same day)
+
+- **Done:** a "Serve WebP" column whose header switch serves WebP for all images, and turns it off for all. The per-image switch moved into that column. Details: `v2/replacement/bulk-serve-report.md`.
+- **D3 is settled** by this: the header switch covers every image in the library. Bulk actions for selected rows (P3) are still possible, but no longer needed for the main use.
+- **P1 grows by one item:** uninstall must also delete the new option `ctgen_webp_serve_all`.
+- **P2:** the readme must also explain the header switch, and that images converted later are served automatically while it is on.

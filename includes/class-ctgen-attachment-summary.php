@@ -111,52 +111,63 @@ class CTGEN_Attachment_Summary {
 				'request_timeout' => 120000,
 				'batch_size'      => 10,
 				'i18n'            => array(
-					'finding'    => __( 'Finding images to scan...', 'custom-thumbnail-generator' ),
-					'busy'       => __( 'Scanning...', 'custom-thumbnail-generator' ),
-					'nothing'    => __( 'There are no images to scan.', 'custom-thumbnail-generator' ),
-					'nothingNew' => __( 'Every image has been scanned already. Use "Scan all images" to scan them again.', 'custom-thumbnail-generator' ),
+					'finding'       => __( 'Finding images to scan...', 'custom-thumbnail-generator' ),
+					'busy'          => __( 'Scanning...', 'custom-thumbnail-generator' ),
+					'nothing'       => __( 'There are no images to scan.', 'custom-thumbnail-generator' ),
+					'nothingNew'    => __( 'Every image has been scanned already. Use "Scan all images" to scan them again.', 'custom-thumbnail-generator' ),
 					/* translators: 1: number of images scanned so far, 2: total number of images. */
-					'processing' => __( 'Scanning images %1$s of %2$s...', 'custom-thumbnail-generator' ),
+					'processing'    => __( 'Scanning images %1$s of %2$s...', 'custom-thumbnail-generator' ),
 					/* translators: 1: percentage complete, 2: images scanned, 3: total images. */
-					'announce'   => __( '%1$s%% done: %2$s of %3$s images scanned.', 'custom-thumbnail-generator' ),
+					'announce'      => __( '%1$s%% done: %2$s of %3$s images scanned.', 'custom-thumbnail-generator' ),
 					/* translators: %s: number of images scanned. */
-					'doneOk'     => __( 'Scan complete: %s images scanned. Reload the page to update filters and sorting.', 'custom-thumbnail-generator' ),
+					'doneOk'        => __( 'Scan complete: %s images scanned. Reload the page to update filters and sorting.', 'custom-thumbnail-generator' ),
 					/* translators: 1: images scanned, 2: total images. */
-					'doneErrors' => __( 'Scan finished with errors: %1$s of %2$s images scanned. See the list below.', 'custom-thumbnail-generator' ),
+					'doneErrors'    => __( 'Scan finished with errors: %1$s of %2$s images scanned. See the list below.', 'custom-thumbnail-generator' ),
 					/* translators: 1: images scanned, 2: total images, 3: reason. */
-					'stopped'    => __( 'Scan stopped after %1$s of %2$s images: %3$s', 'custom-thumbnail-generator' ),
+					'stopped'       => __( 'Scan stopped after %1$s of %2$s images: %3$s', 'custom-thumbnail-generator' ),
 					/* translators: %s: reason. */
-					'notStarted' => __( 'The scan could not start: %s', 'custom-thumbnail-generator' ),
-					'autoStart'  => __( 'Updating usage for the images on this page...', 'custom-thumbnail-generator' ),
+					'notStarted'    => __( 'The scan could not start: %s', 'custom-thumbnail-generator' ),
+					'autoStart'     => __( 'Updating usage for the images on this page...', 'custom-thumbnail-generator' ),
 					/* translators: %s: number of images. */
-					'autoDone'   => __( 'Usage updated for the %s images on this page.', 'custom-thumbnail-generator' ),
+					'autoDone'      => __( 'Usage updated for the %s images on this page.', 'custom-thumbnail-generator' ),
 					/* translators: 1: images updated, 2: images on the page. */
-					'autoErrors' => __( 'Usage updated for %1$s of %2$s images on this page. See the list below.', 'custom-thumbnail-generator' ),
-					'auth'       => __( 'Your session has expired or you are not allowed to do this. Reload the page and try again.', 'custom-thumbnail-generator' ),
-					'network'    => __( 'The server could not be reached.', 'custom-thumbnail-generator' ),
-					'timeout'    => __( 'The server took too long to respond.', 'custom-thumbnail-generator' ),
-					'malformed'  => __( 'The server sent an unexpected response.', 'custom-thumbnail-generator' ),
+					'autoErrors'    => __( 'Usage updated for %1$s of %2$s images on this page. See the list below.', 'custom-thumbnail-generator' ),
+					'auth'          => __( 'Your session has expired or you are not allowed to do this. Reload the page and try again.', 'custom-thumbnail-generator' ),
+					'network'       => __( 'The server could not be reached.', 'custom-thumbnail-generator' ),
+					'timeout'       => __( 'The server took too long to respond.', 'custom-thumbnail-generator' ),
+					'malformed'     => __( 'The server sent an unexpected response.', 'custom-thumbnail-generator' ),
 					/* translators: 1: attachment ID, 2: error message. */
-					'itemError'  => __( 'Image ID %1$s: %2$s', 'custom-thumbnail-generator' ),
+					'itemError'     => __( 'Image ID %1$s: %2$s', 'custom-thumbnail-generator' ),
 					/* translators: %s: error message. */
-					'rowError'   => __( 'The scan failed: %s', 'custom-thumbnail-generator' ),
+					'rowError'      => __( 'The scan failed: %s', 'custom-thumbnail-generator' ),
 					/* translators: %s: number of further errors not listed. */
-					'more'       => __( '...and %s more.', 'custom-thumbnail-generator' ),
-					'regenBusy'  => __( 'Regenerating...', 'custom-thumbnail-generator' ),
+					'more'          => __( '...and %s more.', 'custom-thumbnail-generator' ),
+					'regenBusy'     => __( 'Regenerating...', 'custom-thumbnail-generator' ),
 					/* translators: 1: size name and dimensions, 2: current file number, 3: total files. */
-					'regenStep'  => __( 'Generating %1$s - %2$s of %3$s...', 'custom-thumbnail-generator' ),
-					'regenLabel' => __( 'WebP regeneration progress', 'custom-thumbnail-generator' ),
+					'regenStep'     => __( 'Generating %1$s - %2$s of %3$s...', 'custom-thumbnail-generator' ),
+					'regenLabel'    => __( 'WebP regeneration progress', 'custom-thumbnail-generator' ),
 					/* translators: %s: number of files. */
-					'regenDone'  => __( 'WebP regenerated for %s files.', 'custom-thumbnail-generator' ),
+					'regenDone'     => __( 'WebP regenerated for %s files.', 'custom-thumbnail-generator' ),
 					/* translators: 1: files regenerated, 2: files that failed. */
-					'regenSome'  => __( 'WebP regenerated for %1$s files; %2$s failed.', 'custom-thumbnail-generator' ),
+					'regenSome'     => __( 'WebP regenerated for %1$s files; %2$s failed.', 'custom-thumbnail-generator' ),
 					/* translators: %s: error message. */
-					'regenError' => __( 'WebP could not be regenerated: %s', 'custom-thumbnail-generator' ),
-					'serveBusy'  => __( 'Saving...', 'custom-thumbnail-generator' ),
-					'serveOn'    => __( 'Visitors now get the WebP copy of this image. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
-					'serveOff'   => __( 'Visitors get the original image again. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
+					'regenError'    => __( 'WebP could not be regenerated: %s', 'custom-thumbnail-generator' ),
+					'serveBusy'     => __( 'Saving...', 'custom-thumbnail-generator' ),
+					'serveOn'       => __( 'Visitors now get the WebP copy of this image. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
+					'serveOff'      => __( 'Visitors get the original image again. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
 					/* translators: %s: error message. */
-					'serveError' => __( 'WebP serving could not be changed: %s', 'custom-thumbnail-generator' ),
+					'serveError'    => __( 'WebP serving could not be changed: %s', 'custom-thumbnail-generator' ),
+					'allConfirmOn'  => __( 'Serve WebP for every JPEG and PNG image that has a valid WebP copy smaller than the original? Images converted later are served as WebP too. Sizes whose WebP is larger keep the original.', 'custom-thumbnail-generator' ),
+					'allConfirmOff' => __( 'Stop serving WebP for every image? Visitors get the original JPEG and PNG files again.', 'custom-thumbnail-generator' ),
+					'allStarting'   => __( 'Starting...', 'custom-thumbnail-generator' ),
+					/* translators: 1: images handled so far, 2: total images. */
+					'allProgress'   => __( 'Updating images: %1$s of %2$s...', 'custom-thumbnail-generator' ),
+					/* translators: 1: images now serving WebP, 2: images that keep the original. */
+					'allDoneOn'     => __( 'Done. %1$s images now serve WebP; %2$s keep the original because they have no valid WebP copy smaller than the original. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
+					/* translators: %s: number of images. */
+					'allDoneOff'    => __( 'Done. %s images serve the original again. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
+					/* translators: 1: images handled, 2: total images, 3: reason. */
+					'allStopped'    => __( 'Stopped after %1$s of %2$s images: %3$s Switch it again to finish.', 'custom-thumbnail-generator' ),
 				),
 			)
 		);
@@ -164,7 +175,7 @@ class CTGEN_Attachment_Summary {
 		wp_enqueue_style(
 			'ctgen-attachment-summary-css',
 			CTGEN_PLUGIN_DIR . 'assets/css/ctgen-attachment-summary.css',
-			array( 'ctg-admin.css' ),
+			array( 'ctg-admin.css', 'ctgen-switch-css' ),
 			CTGEN_PLUGIN_VERSION
 		);
 	}
@@ -199,6 +210,9 @@ class CTGEN_Attachment_Summary {
 				<ul id="ctgen-usage-errors"></ul>
 				<p class="description"><?php esc_html_e( 'Usage is found in post and page content, custom fields (including page builders), widgets, theme settings, the site icon and the logo. Images used only in theme files, CSS or on other websites cannot be detected, so "No usage found" does not prove that an image is unused.', 'custom-thumbnail-generator' ); ?></p>
 			</div>
+
+			<div id="ctgen-webp-serve-all-status" class="ctgen-webp-serve-all-status" role="status" aria-live="polite"></div>
+			<?php echo self::render_auto_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside render_auto_hint(). ?>
 
 			<form method="get" id="ctgen-attachment-summary-form">
 				<input type="hidden" name="page" value="ctgen-attachment-summary" />
@@ -476,7 +490,7 @@ class CTGEN_Attachment_Summary {
 	/**
 	 * AJAX: re-creates the WebP copies of one image (every size, the main file
 	 * and, for scaled uploads, the original upload) and returns the refreshed
-	 * WebP status cell.
+	 * "WebP status" and "Serve WebP" cells.
 	 *
 	 * @return void
 	 */
@@ -505,9 +519,10 @@ class CTGEN_Attachment_Summary {
 
 			wp_send_json_success(
 				array(
-					'outcome' => $outcome['outcome'],
-					'message' => isset( $outcome['message'] ) ? $outcome['message'] : '',
-					'html'    => self::render_webp_cell( $id ),
+					'outcome'    => $outcome['outcome'],
+					'message'    => isset( $outcome['message'] ) ? $outcome['message'] : '',
+					'html'       => self::render_webp_cell( $id ),
+					'serve_html' => self::render_serve_cell( $id ),
 				)
 			);
 		}
@@ -532,9 +547,10 @@ class CTGEN_Attachment_Summary {
 
 		wp_send_json_success(
 			array(
-				'counts' => $result['counts'],
-				'errors' => $errors,
-				'html'   => self::render_webp_cell( $id ),
+				'counts'     => $result['counts'],
+				'errors'     => $errors,
+				'html'       => self::render_webp_cell( $id ),
+				'serve_html' => self::render_serve_cell( $id ),
 			)
 		);
 	}
@@ -688,7 +704,7 @@ class CTGEN_Attachment_Summary {
 		$open = '<div class="ctgen-webp-cell" id="ctgen-webp-cell-' . $attachment_id . '" data-webp="' . $copies . '" data-files="' . $sources . '" data-bytes="' . $webp_bytes . '" data-source-bytes="' . $source_bytes . '">';
 
 		if ( 0 === $copies ) {
-			return $open . '<span class="ctgen-webp-status">' . esc_html__( 'No WebP copies yet', 'custom-thumbnail-generator' ) . '</span>' . self::render_serve_control( $attachment_id ) . $button . '</div>';
+			return $open . '<span class="ctgen-webp-status">' . esc_html__( 'No WebP copies yet', 'custom-thumbnail-generator' ) . '</span>' . $button . '</div>';
 		}
 
 		/* translators: 1: total size, 2: number of files. */
@@ -716,7 +732,7 @@ class CTGEN_Attachment_Summary {
 			$html .= '<div class="ctgen-webp-ratio ctgen-webp-larger">' . esc_html( __( 'WebP is not smaller than the original - no saving', 'custom-thumbnail-generator' ) . $based_on ) . '</div>';
 		}
 
-		return $html . self::render_serve_control( $attachment_id ) . $button . '</div>';
+		return $html . $button . '</div>';
 	}
 
 	/**
@@ -761,6 +777,64 @@ class CTGEN_Attachment_Summary {
 	}
 
 	/**
+	 * HTML of the "Serve WebP" column header (escaped): the column name and
+	 * the switch for all images, on or off as stored.
+	 *
+	 * @return string
+	 */
+	public static function render_serve_all_header() {
+		$state = ctgen_webp_serve_all()->is_on() ? ' checked="checked"' : '';
+
+		return '<span class="ctgen-webp-serve-all">'
+			. '<span class="ctgen-webp-serve-all-label">' . esc_html__( 'Serve WebP', 'custom-thumbnail-generator' ) . '</span>'
+			. '<input type="checkbox" role="switch" class="ctgen-switch ctgen-webp-serve-all-toggle" aria-label="' . esc_attr__( 'Serve WebP for all images', 'custom-thumbnail-generator' ) . '"' . $state . ' />'
+			. '</span>';
+	}
+
+	/**
+	 * HTML of the hint shown while "Serve WebP for all images" is on but
+	 * automatic WebP is off (escaped): new uploads have no WebP copies, so
+	 * they would not be served. Rendered hidden while serving all is off, so
+	 * the page script can show it after the switch is turned on. Empty when
+	 * automatic WebP is on.
+	 *
+	 * @return string
+	 */
+	public static function render_auto_hint() {
+		if ( ctgen_webp_auto_convert()->is_on() ) {
+			return '';
+		}
+
+		return '<div class="notice notice-warning inline ctgen-webp-auto-hint" id="ctgen-webp-auto-hint"' . ( ctgen_webp_serve_all()->is_on() ? '' : ' hidden' ) . '><p>'
+			. esc_html__( 'New uploads are not served as WebP until they have WebP copies, and automatic WebP is off.', 'custom-thumbnail-generator' ) . ' '
+			. '<a href="' . esc_url( admin_url( 'admin.php?page=ctgen-admin-settings#ctgen-webp-auto' ) ) . '">' . esc_html__( 'Turn on "Create WebP automatically" on the Settings page', 'custom-thumbnail-generator' ) . '</a>'
+			. '</p></div>';
+	}
+
+	/**
+	 * HTML of the "Serve WebP" cell (escaped): the switch for one image, or
+	 * why there is none.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return string
+	 */
+	public static function render_serve_cell( $attachment_id ) {
+		$attachment_id = (int) $attachment_id;
+		$mime          = (string) get_post_mime_type( $attachment_id );
+		$open          = '<div class="ctgen-webp-serve-cell" id="ctgen-webp-serve-cell-' . $attachment_id . '">';
+
+		if ( 'image/webp' === $mime ) {
+			return $open . esc_html__( 'Already WebP', 'custom-thumbnail-generator' ) . '</div>';
+		}
+
+		if ( ! in_array( $mime, CTGEN_Webp_Converter::ALLOWED_SOURCE_MIME_TYPES, true ) ) {
+			return $open . esc_html__( 'Not available', 'custom-thumbnail-generator' ) . '</div>';
+		}
+
+		return $open . self::render_serve_control( $attachment_id ) . '</div>';
+	}
+
+	/**
 	 * HTML of the "Serve WebP" switch for one image (escaped).
 	 *
 	 * @param int $attachment_id Attachment ID.
@@ -792,8 +866,9 @@ class CTGEN_Attachment_Summary {
 		}
 
 		return '<div class="ctgen-webp-serve">'
-			. '<input type="checkbox" role="switch" class="ctgen-webp-serve-toggle" id="' . esc_attr( $toggle_id ) . '" data-id="' . $attachment_id . '"' . $state . ' />'
-			. '<label for="' . esc_attr( $toggle_id ) . '">' . esc_html__( 'Serve WebP', 'custom-thumbnail-generator' ) . '</label>'
+			. '<input type="checkbox" role="switch" class="ctgen-switch ctgen-webp-serve-toggle" id="' . esc_attr( $toggle_id ) . '" data-id="' . $attachment_id . '"' . $state . ' />'
+			/* translators: %s: image title. */
+			. '<label for="' . esc_attr( $toggle_id ) . '" class="screen-reader-text">' . esc_html( sprintf( __( 'Serve WebP for "%s"', 'custom-thumbnail-generator' ), get_the_title( $attachment_id ) ) ) . '</label>'
 			. $status
 			. '<span class="ctgen-webp-serve-message" role="status" aria-live="polite"></span>'
 			. '</div>';

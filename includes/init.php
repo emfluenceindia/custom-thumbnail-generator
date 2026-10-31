@@ -116,9 +116,13 @@ require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-manifest.php';
 require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-replacer.php';
 require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-health-check.php';
 require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-serve-ajax.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-serve-all.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-auto-convert.php';
 ctgen_webp_replacer()->register();
 ctgen_webp_health_check()->register();
 ctgen_webp_serve_ajax()->register();
+ctgen_webp_serve_all()->register();
+ctgen_webp_auto_convert()->register();
 
 /**
  * The "serve WebP" manifest service (one instance per request).
@@ -160,6 +164,36 @@ function ctgen_webp_serve_ajax() {
 
 	if ( null === $instance ) {
 		$instance = new CTGEN_Webp_Serve_Ajax( ctgen_webp_manifest(), ctgen_webp_handlers() );
+	}
+
+	return $instance;
+}
+
+/**
+ * The "Serve WebP" switch for all images (one instance per request).
+ *
+ * @return CTGEN_Webp_Serve_All
+ */
+function ctgen_webp_serve_all() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Serve_All( ctgen_webp_serve_ajax() );
+	}
+
+	return $instance;
+}
+
+/**
+ * "Create WebP automatically for new uploads" (one instance per request).
+ *
+ * @return CTGEN_Webp_Auto_Convert
+ */
+function ctgen_webp_auto_convert() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Auto_Convert( ctgen_webp_handlers() );
 	}
 
 	return $instance;
@@ -254,6 +288,14 @@ function ctgen_enqueue_scripts( $hook_suffix = '' ) {
 	wp_enqueue_style(
 		'ctg-admin.css',
 		CTGEN_PLUGIN_DIR . 'assets/css/ctgen-admin.min.css',
+		array(),
+		CTGEN_PLUGIN_VERSION
+	);
+
+	/** On/off switches (automatic WebP on the Settings page, "Serve WebP" on the Attachment Summary page). */
+	wp_enqueue_style(
+		'ctgen-switch-css',
+		CTGEN_PLUGIN_DIR . 'assets/css/ctgen-switch.css',
 		array(),
 		CTGEN_PLUGIN_VERSION
 	);

@@ -1,0 +1,435 @@
+<?php
+/**
+ * Plugin initialization: constants, includes, asset enqueueing and custom size registration.
+ *
+ * @package Custom_Thumbnail_Generator
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed early.
+}
+
+/**
+ * Plugin initialization
+ */
+
+if ( ! defined( 'CTGEN_PLUGIN_PATH' ) ) {
+	define( 'CTGEN_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+}
+if ( ! defined( 'CTGEN_PLUGIN_URL' ) ) {
+	define( 'CTGEN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+}
+if ( ! defined( 'CTGEN_TEMPLATE_DIR' ) ) {
+	define( 'CTGEN_TEMPLATE_DIR', plugin_dir_path( __DIR__ ) . 'templates/' );
+}
+if ( ! defined( 'CTGEN_PLUGIN_DIR' ) ) {
+	define( 'CTGEN_PLUGIN_DIR', plugin_dir_url( __DIR__ ) );
+}
+if ( ! defined( 'CTGEN_WEBP_DIR' ) ) {
+	define( 'CTGEN_WEBP_DIR', plugin_dir_path( __DIR__ ) . 'webp/' );
+}
+
+if ( ! defined( 'CTGEN_NATIVE_THUMB_SIZES' ) ) {
+	define( 'CTGEN_NATIVE_THUMB_SIZES', array( 'thumbnail', 'medium', 'medium_large', 'large' ) );
+}
+
+if ( ! defined( 'CTGEN_LOGO' ) ) {
+	define( 'CTGEN_LOGO', CTGEN_PLUGIN_DIR . 'assets/images/icon-80x80.png' );
+}
+
+if ( ! defined( 'CTGEN_ALLOWED_TAGS' ) ) {
+	define(
+		'CTGEN_ALLOWED_TAGS',
+		array(
+			'form'     => array(
+				'action' => array(),
+				'method' => array(),
+				'id'     => array(),
+				'class'  => array(),
+			),
+			'input'    => array(
+				'type'    => array(),
+				'name'    => array(),
+				'value'   => array(),
+				'checked' => array(),
+				'id'      => array(),
+				'class'   => array(),
+			),
+			'select'   => array(
+				'name'  => array(),
+				'id'    => array(),
+				'class' => array(),
+			),
+			'option'   => array(
+				'value'    => array(),
+				'selected' => array(),
+			),
+			'textarea' => array(
+				'name'  => array(),
+				'id'    => array(),
+				'class' => array(),
+			),
+			'label'    => array(
+				'for'   => array(),
+				'class' => array(),
+			),
+			'div'      => array(
+				'class' => array(),
+				'id'    => array(),
+			),
+			'span'     => array( 'class' => array() ),
+			'p'        => array(),
+			'button'   => array(
+				'type'  => array(),
+				'class' => array(),
+				'name'  => array(),
+				'value' => array(),
+			),
+		)
+	);
+}
+
+require_once CTGEN_PLUGIN_PATH . 'settings-page.php';
+require_once CTGEN_PLUGIN_PATH . 'class-ctgen-functions.php';
+
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-converter.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-ajax-handlers.php';
+ctgen_webp_handlers();
+
+/**
+ * The WebP conversion handlers (one instance per request; also used by the Attachment Summary page).
+ *
+ * @return CTGEN_Webp_Ajax_Handlers
+ */
+function ctgen_webp_handlers() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Ajax_Handlers();
+	}
+
+	return $instance;
+}
+
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-url-mapper.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-manifest.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-replacer.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-health-check.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-serve-ajax.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-serve-all.php';
+ctgen_webp_replacer()->register();
+ctgen_webp_health_check()->register();
+ctgen_webp_serve_ajax()->register();
+ctgen_webp_serve_all()->register();
+
+/**
+ * The "serve WebP" manifest service (one instance per request).
+ *
+ * @return CTGEN_Webp_Manifest
+ */
+function ctgen_webp_manifest() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Manifest( ctgen_webp_handlers() );
+	}
+
+	return $instance;
+}
+
+/**
+ * The front-end WebP replacer (one instance per request).
+ *
+ * @return CTGEN_Webp_Replacer
+ */
+function ctgen_webp_replacer() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Replacer( ctgen_webp_manifest(), new CTGEN_Webp_Url_Mapper() );
+	}
+
+	return $instance;
+}
+
+/**
+ * The "Serve WebP" toggle's AJAX endpoint (one instance per request).
+ *
+ * @return CTGEN_Webp_Serve_Ajax
+ */
+function ctgen_webp_serve_ajax() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Serve_Ajax( ctgen_webp_manifest(), ctgen_webp_handlers() );
+	}
+
+	return $instance;
+}
+
+/**
+ * The "Serve WebP" switch for all images (one instance per request).
+ *
+ * @return CTGEN_Webp_Serve_All
+ */
+function ctgen_webp_serve_all() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Serve_All( ctgen_webp_serve_ajax() );
+	}
+
+	return $instance;
+}
+
+/**
+ * The serve manifest health check (one instance per request).
+ *
+ * @return CTGEN_Webp_Health_Check
+ */
+function ctgen_webp_health_check() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Health_Check( ctgen_webp_manifest() );
+	}
+
+	return $instance;
+}
+
+require_once CTGEN_PLUGIN_PATH . 'class-ctgen-usage-scanner.php';
+require_once CTGEN_PLUGIN_PATH . 'class-ctgen-attachment-summary.php';
+ctgen_attachment_summary();
+
+require_once CTGEN_PLUGIN_PATH . 'class-ctgen-ajax-handlers.php';
+new CTGEN_Ajax_Handlers();
+
+/**
+ * Enqueue scripts and Localize for AJAX handling
+ */
+add_action( 'admin_enqueue_scripts', 'ctgen_enqueue_scripts' );
+
+/**
+ * Enqueues the admin script, its localized AJAX data, and the admin styles on
+ * the plugin's own pages only (the script and the nonce are not needed elsewhere).
+ *
+ * @param string $hook_suffix The current admin page hook suffix (passed by WordPress).
+ * @return void
+ */
+function ctgen_enqueue_scripts( $hook_suffix = '' ) {
+	$settings_hook = ctgen_admin_page_hook( 'settings' );
+	$plugin_hooks  = array_filter( array( $settings_hook, ctgen_admin_page_hook( 'attachment_summary' ) ) );
+
+	if ( ! in_array( $hook_suffix, $plugin_hooks, true ) ) {
+		return;
+	}
+
+	$is_settings_page = $settings_hook === $hook_suffix;
+
+	if ( $is_settings_page ) {
+		/**
+		 * Enqueue media action scripts. The readable source is
+		 * assets/js/ctgen-media-actions.js (see v2/tools/build-js.js).
+		 */
+		wp_enqueue_script(
+			'ctgen-media-actions-script',
+			CTGEN_PLUGIN_DIR . 'assets/js/ctgen-media-actions.min.js',
+			array( 'jquery' ),
+			CTGEN_PLUGIN_VERSION,
+			true
+		);
+
+		/**
+		 * Localize media action script
+		 */
+		wp_localize_script(
+			'ctgen-media-actions-script',
+			'CTGENMediaAction',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'ctgen_media_actions' ),
+				'i18n'     => array(
+					'requestFailed'     => __( 'Unknown error! Request failed.', 'custom-thumbnail-generator' ),
+					/* translators: %s: thumbnail size name, e.g. ctgen_300x200. */
+					'confirmRemove'     => __( 'You won\'t be able to generate %s thumbnail in the future. However, all existing thumbnails will remain intact and accessible! Press OK to proceed.', 'custom-thumbnail-generator' ),
+					'working'           => __( 'Working...', 'custom-thumbnail-generator' ),
+					'workingLower'      => __( 'working...', 'custom-thumbnail-generator' ),
+					/* translators: %s: thumbnail size name, e.g. ctgen_300x200. */
+					'confirmRegenerate' => __( 'This will regenerate all existing thumbnails of %s size. Press OK to proceed.', 'custom-thumbnail-generator' ),
+					'noImages'          => __( 'Media library contains no image. Thumbnail generation failed.', 'custom-thumbnail-generator' ),
+					'processing'        => __( 'Processing...', 'custom-thumbnail-generator' ),
+					/* translators: 1: images processed so far, 2: total number of images. */
+					'processed'         => __( 'Processed %1$s of %2$s', 'custom-thumbnail-generator' ),
+					'complete'          => __( 'Thumbnail generation complete!', 'custom-thumbnail-generator' ),
+					'regenerate'        => __( 'Regenerate Thumbnails', 'custom-thumbnail-generator' ),
+				),
+			)
+		);
+	}
+
+	/** Enqueue admin settings page CSS (also used by the Attachment Summary page). */
+	wp_enqueue_style(
+		'ctg-admin.css',
+		CTGEN_PLUGIN_DIR . 'assets/css/ctgen-admin.min.css',
+		array(),
+		CTGEN_PLUGIN_VERSION
+	);
+
+	if ( $is_settings_page ) {
+		/** Enqueue FontAwesome (icons of the settings page). */
+		wp_enqueue_style(
+			'ctg-fa-css',
+			CTGEN_PLUGIN_DIR . 'assets/css/font-awesome.min.css',
+			array(),
+			'4.7.0',
+			'all'
+		);
+	}
+}
+
+/**
+ * Enqueue the WebP conversion script and styles on the plugin settings page only.
+ */
+add_action( 'admin_enqueue_scripts', 'ctgen_enqueue_webp_scripts' );
+
+/**
+ * Enqueues and localizes the WebP conversion UI assets.
+ *
+ * The readable source is assets/js/ctgen-webp-convert.js; the enqueued
+ * .min.js is generated from it (see v2/tools/build-js.js).
+ *
+ * @param string $hook_suffix The current admin page hook suffix.
+ * @return void
+ */
+function ctgen_enqueue_webp_scripts( $hook_suffix ) {
+	$settings_hook = ctgen_admin_page_hook( 'settings' );
+
+	if ( '' === $settings_hook || $settings_hook !== $hook_suffix ) {
+		return;
+	}
+
+	wp_enqueue_script(
+		'ctgen-webp-convert-script',
+		CTGEN_PLUGIN_DIR . 'assets/js/ctgen-webp-convert.min.js',
+		array( 'jquery' ),
+		CTGEN_PLUGIN_VERSION,
+		true
+	);
+
+	wp_localize_script(
+		'ctgen-webp-convert-script',
+		'CTGENWebpConvert',
+		array(
+			'ajax_url'        => admin_url( 'admin-ajax.php' ),
+			'nonce'           => wp_create_nonce( 'ctgen_media_actions' ),
+			// Milliseconds the browser waits for one request before reporting it as failed.
+			'request_timeout' => 120000,
+			'i18n'            => array(
+				'finding'      => __( 'Finding images to convert...', 'custom-thumbnail-generator' ),
+				/* translators: %s: image size name, e.g. "thumbnail". */
+				'findingSize'  => __( 'Finding images to convert for the %s size...', 'custom-thumbnail-generator' ),
+				'busy'         => __( 'Converting...', 'custom-thumbnail-generator' ),
+				'nothing'      => __( 'No JPEG or PNG images found. Nothing to convert.', 'custom-thumbnail-generator' ),
+				/* translators: 1: number of images processed so far, 2: total number of images. */
+				'processing'   => __( 'Processing image %1$s of %2$s...', 'custom-thumbnail-generator' ),
+				/* translators: 1: percentage complete, 2: number of images processed, 3: total number of images. */
+				'announce'     => __( '%1$s%% done: %2$s of %3$s images processed.', 'custom-thumbnail-generator' ),
+				/* translators: 1: files converted, 2: files that already had a current WebP copy, 3: skipped files, 4: failed files. */
+				'counts'       => __( 'Image files - converted: %1$s, already WebP: %2$s, skipped: %3$s, failed: %4$s.', 'custom-thumbnail-generator' ),
+				/* translators: %s: number of images that could not be processed at all. */
+				'imagesFailed' => __( 'Images that could not be processed: %s.', 'custom-thumbnail-generator' ),
+				/* translators: 1: number of images processed, 2: total number of images. */
+				'doneOk'       => __( 'WebP conversion complete: %1$s of %2$s images processed.', 'custom-thumbnail-generator' ),
+				/* translators: 1: number of images processed, 2: total number of images. */
+				'doneErrors'   => __( 'WebP conversion finished with errors: %1$s of %2$s images processed. See the list below.', 'custom-thumbnail-generator' ),
+				/* translators: 1: number of images processed, 2: total number of images, 3: reason. */
+				'stopped'      => __( 'WebP conversion stopped after %1$s of %2$s images: %3$s', 'custom-thumbnail-generator' ),
+				/* translators: %s: reason. */
+				'notStarted'   => __( 'WebP conversion could not start: %s', 'custom-thumbnail-generator' ),
+				'auth'         => __( 'Your session has expired or you are not allowed to do this. Reload the page and try again.', 'custom-thumbnail-generator' ),
+				'network'      => __( 'The server could not be reached.', 'custom-thumbnail-generator' ),
+				'timeout'      => __( 'The server took too long to respond.', 'custom-thumbnail-generator' ),
+				'malformed'    => __( 'The server sent an unexpected response.', 'custom-thumbnail-generator' ),
+				/* translators: 1: attachment ID, 2: error message. */
+				'itemError'    => __( 'Image ID %1$s: %2$s', 'custom-thumbnail-generator' ),
+				/* translators: 1: attachment ID, 2: image size name, 3: error message. */
+				'sizeError'    => __( 'Image ID %1$s, size %2$s: %3$s', 'custom-thumbnail-generator' ),
+				/* translators: %s: number of further errors not listed. */
+				'more'         => __( '...and %s more.', 'custom-thumbnail-generator' ),
+			),
+		)
+	);
+
+	wp_enqueue_style(
+		'ctgen-webp-convert-css',
+		CTGEN_PLUGIN_DIR . 'assets/css/ctgen-webp-convert.css',
+		array( 'ctg-admin.css' ),
+		CTGEN_PLUGIN_VERSION
+	);
+}
+
+/**
+ * Register custom image sizes in WordPress
+ */
+add_action( 'init', 'ctgen_register_custom_sizes' );
+
+/**
+ * Registers every custom size stored by the plugin with add_image_size().
+ *
+ * @return void
+ */
+function ctgen_register_custom_sizes() {
+	foreach ( ctgen_get_custom_sizes() as $slug => $args ) {
+		add_image_size( $slug, $args['width'], $args['height'], $args['crop'] );
+	}
+}
+
+/**
+ * The plugin's custom sizes from the ctgen_custom_image_sizes option, keeping
+ * only well-formed entries (slug "ctgen_<width>x<height>", positive integer
+ * dimensions), so a damaged option can never break size registration.
+ *
+ * @return array<string, array{width: int, height: int, crop: bool}>
+ */
+function ctgen_get_custom_sizes() {
+	$stored = get_option( 'ctgen_custom_image_sizes', array() );
+	$sizes  = array();
+
+	if ( ! is_array( $stored ) ) {
+		return $sizes;
+	}
+
+	foreach ( $stored as $slug => $args ) {
+		if ( ! is_string( $slug ) || ! preg_match( '/^ctgen_\d+x\d+$/', $slug ) || ! is_array( $args ) || empty( $args['width'] ) || empty( $args['height'] ) ) {
+			continue;
+		}
+
+		$sizes[ $slug ] = array(
+			'width'  => absint( $args['width'] ),
+			'height' => absint( $args['height'] ),
+			'crop'   => ! empty( $args['crop'] ),
+		);
+	}
+
+	return $sizes;
+}
+
+
+/**
+ * Make custom image sizes available in post
+ */
+add_filter( 'image_size_names_choose', 'ctgen_add_custom_sizes_to_media_dropdown' );
+
+/**
+ * Adds the plugin's custom sizes to the media size dropdown.
+ *
+ * @param array $sizes Size names keyed by slug.
+ * @return array
+ */
+function ctgen_add_custom_sizes_to_media_dropdown( $sizes ) {
+	foreach ( array_keys( ctgen_get_custom_sizes() ) as $slug ) {
+		$sizes[ $slug ] = $slug;
+	}
+
+	return $sizes;
+}

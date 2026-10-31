@@ -1,0 +1,430 @@
+/* Attachment Summary page. Progress bar matches the WebP conversion bar. */
+
+#ctgen-usage-ui {
+	margin: 10px 0 16px;
+}
+
+#ctgen-usage-ui p {
+	margin: 6px 0;
+}
+
+#ctgen-usage-progressbar {
+	margin: 10px 0;
+	width: 100%;
+	max-width: 760px;
+	height: 30px;
+	background: #e0e0e0;
+	position: relative;
+}
+
+#ctgen-usage-progress {
+	width: 0%;
+	height: 30px;
+	background: #2271b1;
+	transition: width 0.3s;
+}
+
+#ctgen-usage-percentage {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	line-height: 30px;
+	text-align: center;
+	font-weight: 500;
+	color: #1d2327;
+}
+
+#ctgen-usage-percentage.ctgen-usage-percentage-light {
+	color: #fff;
+}
+
+#ctgen-usage-status {
+	font-weight: 500;
+}
+
+#ctgen-usage-errors {
+	margin: 6px 0 0 18px;
+	list-style: disc;
+	color: #8a2424;
+}
+
+/* Column widths (sum 100%): Image 16, Type 8, Attachment 20, Current size 15, WebP status 27, Serve WebP 14. */
+.ctgen-attachment-summary .column-image {
+	width: 16%;
+}
+
+.ctgen-attachment-summary .column-type {
+	width: 8%;
+}
+
+.ctgen-attachment-summary .column-attachment {
+	width: 20%;
+}
+
+.ctgen-attachment-summary .column-size {
+	width: 15%;
+}
+
+.ctgen-attachment-summary .column-status {
+	width: 27%;
+}
+
+.ctgen-attachment-summary .column-serve {
+	width: 14%;
+}
+
+.ctgen-image-cell {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+}
+
+.ctgen-image-preview img {
+	width: 60px;
+	height: 60px;
+	object-fit: cover;
+	display: block;
+}
+
+.ctgen-image-name strong {
+	display: block;
+}
+
+.ctgen-file-name,
+.ctgen-usage-meta,
+.ctgen-usage-when {
+	color: #646970;
+	font-size: 12px;
+	word-break: break-all;
+}
+
+.ctgen-usage-when {
+	display: block;
+}
+
+.ctgen-usage-list summary,
+.ctgen-size-list summary {
+	cursor: pointer;
+}
+
+.ctgen-usage-list ul,
+.ctgen-size-list ul {
+	margin: 4px 0 4px 16px;
+	list-style: disc;
+}
+
+.ctgen-usage-unscanned,
+.ctgen-usage-none {
+	display: block;
+}
+
+.ctgen-usage-row-error {
+	display: block;
+	color: #8a2424;
+}
+
+/* Single image viewer (popup) reused for every "View" link. */
+.ctgen-image-viewer {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.75);
+}
+
+.ctgen-image-viewer[hidden] {
+	display: none;
+}
+
+.ctgen-image-viewer-box {
+	background: #fff;
+	max-width: 90vw;
+	max-height: 90vh;
+	padding: 12px 16px 16px;
+	box-sizing: border-box;
+	overflow: auto;
+	box-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
+}
+
+.ctgen-image-viewer-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 8px;
+}
+
+.ctgen-image-viewer-head h2 {
+	margin: 0;
+	font-size: 16px;
+	word-break: break-all;
+}
+
+.ctgen-image-viewer-close {
+	font-size: 20px !important;
+	line-height: 1 !important;
+	min-height: 32px;
+}
+
+.ctgen-image-viewer-img {
+	display: block;
+	max-width: 100%;
+	max-height: 75vh;
+	margin: 0 auto;
+}
+
+.ctgen-image-viewer-about {
+	margin: 8px 0 0;
+	color: #646970;
+	text-align: center;
+}
+
+body.ctgen-image-viewer-open {
+	overflow: hidden;
+}
+
+/* Attachment cell: label + refresh icon on one line. */
+.ctgen-usage-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 4px;
+}
+
+.ctgen-usage-refresh {
+	border: 0;
+	background: none;
+	padding: 0;
+	margin: 0;
+	cursor: pointer;
+	color: #2271b1;
+	line-height: 1;
+	border-radius: 2px;
+}
+
+.ctgen-usage-refresh .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.ctgen-usage-refresh:hover {
+	color: #135e96;
+}
+
+.ctgen-usage-refresh:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px #2271b1;
+}
+
+.ctgen-usage-refresh:disabled {
+	cursor: default;
+	opacity: 0.6;
+}
+
+.ctgen-usage-cell.is-busy .ctgen-usage-refresh .dashicons {
+	animation: ctgen-usage-spin 1s linear infinite;
+}
+
+@keyframes ctgen-usage-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ctgen-usage-cell.is-busy .ctgen-usage-refresh .dashicons {
+		animation: none;
+	}
+}
+
+/* WebP status: compression ratio, savings bar, regenerate button. */
+.ctgen-webp-ratio {
+	margin-top: 4px;
+	font-size: 12px;
+	color: #1d2327;
+}
+
+.ctgen-webp-ratio.ctgen-webp-larger {
+	color: #8a2424;
+}
+
+.ctgen-webp-saving {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 4px;
+	font-size: 12px;
+	color: #646970;
+}
+
+.ctgen-webp-saving-bar {
+	position: relative;
+	flex: 0 0 90px;
+	height: 8px;
+	border-radius: 4px;
+	background: #b8e6bf; /* Space that could be saved. */
+	overflow: hidden;
+}
+
+.ctgen-webp-saving-used {
+	display: block;
+	height: 100%;
+	background: #2271b1; /* Size of the WebP copies, relative to the originals. */
+}
+
+/* Always on its own line, below the status, in every row. */
+.ctgen-webp-cell .ctgen-webp-regenerate {
+	display: block;
+	width: auto;
+	margin-top: 6px;
+}
+
+.ctgen-webp-regenerate-status {
+	display: block;
+	font-size: 12px;
+	color: #646970;
+}
+
+/* Per-image WebP regeneration progress. */
+.ctgen-webp-progress {
+	margin-top: 6px;
+	font-size: 12px;
+	color: #1d2327;
+}
+
+.ctgen-webp-progress progress {
+	display: block;
+	width: 160px;
+	height: 8px;
+	margin-bottom: 2px;
+	accent-color: #2271b1;
+}
+
+/*
+ * "Serve WebP" switches (one per image, one for all images in the column
+ * header): a real checkbox (role="switch") drawn as a track with a knob.
+ * WordPress's admin styles give every checkbox a size, margins, a float and a
+ * check-mark image in ::before; all of those are reset here so the knob sits
+ * exactly centred in the track.
+ */
+.ctgen-webp-serve {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0 8px;
+}
+
+.ctgen-webp-serve-all {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.ctgen-webp-serve-all-status {
+	margin: 8px 0;
+	font-weight: 500;
+}
+
+.ctgen-webp-serve-all-status:empty {
+	display: none;
+}
+
+.ctgen-switch[type="checkbox"] {
+	position: relative;
+	box-sizing: border-box;
+	flex: 0 0 auto;
+	width: 46px;
+	min-width: 46px;
+	height: 24px;
+	margin: 0;
+	padding: 0;
+	border: 1px solid #a7aaad;
+	border-radius: 12px;
+	background: #dcdcde;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+	line-height: normal;
+	vertical-align: middle;
+	appearance: none;
+	-webkit-appearance: none;
+	cursor: pointer;
+	transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.ctgen-switch[type="checkbox"]::before,
+.ctgen-switch[type="checkbox"]:checked::before {
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	float: none;
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+	transition: transform 0.2s ease;
+}
+
+.ctgen-switch[type="checkbox"]:hover {
+	border-color: #8c8f94;
+}
+
+.ctgen-switch[type="checkbox"]:checked {
+	border-color: #008a20;
+	background: #00a32a;
+}
+
+.ctgen-switch[type="checkbox"]:checked:hover {
+	background: #008a20;
+}
+
+/* Track 46px - 2px border - 2 x 2px gap - 18px knob = 22px of travel. */
+.ctgen-switch[type="checkbox"]:checked::before {
+	transform: translateX(22px);
+}
+
+.ctgen-switch[type="checkbox"]:focus {
+	outline: none;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.ctgen-switch[type="checkbox"]:focus-visible {
+	outline: 2px solid #00a32a;
+	outline-offset: 2px;
+}
+
+.ctgen-switch[type="checkbox"]:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Status lines start on their own row, under the switch. */
+.ctgen-webp-serve > p,
+.ctgen-webp-serve > details,
+.ctgen-webp-serve > .ctgen-webp-serve-message {
+	flex: 0 0 100%;
+}
+
+.ctgen-webp-serve-status,
+.ctgen-webp-serve-message,
+.ctgen-webp-serve-skipped {
+	display: block;
+	margin: 4px 0 0;
+	font-size: 12px;
+	color: #646970;
+}
+
+.ctgen-webp-serve-warning {
+	color: #8a2424;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ctgen-switch[type="checkbox"],
+	.ctgen-switch[type="checkbox"]::before {
+		transition: none;
+	}
+}

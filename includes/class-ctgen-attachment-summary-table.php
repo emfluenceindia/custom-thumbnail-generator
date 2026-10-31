@@ -57,6 +57,8 @@ class CTGEN_Attachment_Summary_Table extends WP_List_Table {
 			'attachment' => __( 'Attachment', 'custom-thumbnail-generator' ),
 			'size'       => __( 'Current size', 'custom-thumbnail-generator' ),
 			'status'     => __( 'WebP status', 'custom-thumbnail-generator' ),
+			// Holds the switch for all images; screen options and mobile labels strip the markup.
+			'serve'      => CTGEN_Attachment_Summary::render_serve_all_header(),
 		);
 	}
 
@@ -397,5 +399,15 @@ class CTGEN_Attachment_Summary_Table extends WP_List_Table {
 	 */
 	protected function column_status( $item ) {
 		return CTGEN_Attachment_Summary::render_webp_cell( $item->ID );
+	}
+
+	/**
+	 * Serve WebP column: the per-image switch.
+	 *
+	 * @param WP_Post $item Attachment.
+	 * @return string
+	 */
+	protected function column_serve( $item ) {
+		return CTGEN_Attachment_Summary::render_serve_cell( $item->ID );
 	}
 }

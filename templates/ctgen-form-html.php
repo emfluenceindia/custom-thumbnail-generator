@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 
 <?php CTGEN_Functions::ctgen_render_page_header( __( 'Custom Thumbnail Generator', 'custom-thumbnail-generator' ) ); ?>
+<?php settings_errors( 'general' ); ?>
+<?php echo ctgen_webp_auto_convert()->render_settings_card(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside render_settings_card(). ?>
 <div id="ctgen-action-container">
 	<div id="ctgen-form-div">
 		<fieldset class="ctgen-form-container">

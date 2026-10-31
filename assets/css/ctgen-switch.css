@@ -1,0 +1,84 @@
+/*
+ * On/off switch: a real checkbox (role="switch") drawn as a track with a knob.
+ * Used for automatic WebP (Settings page) and "Serve WebP" (Attachment Summary).
+ * WordPress's admin styles give every checkbox a size, margins, a float and a
+ * check-mark image in ::before; all of those are reset here so the knob sits
+ * exactly centred in the track.
+ */
+
+.ctgen-switch[type="checkbox"] {
+	position: relative;
+	box-sizing: border-box;
+	flex: 0 0 auto;
+	width: 46px;
+	min-width: 46px;
+	height: 24px;
+	margin: 0;
+	padding: 0;
+	border: 1px solid #a7aaad;
+	border-radius: 12px;
+	background: #dcdcde;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+	line-height: normal;
+	vertical-align: middle;
+	appearance: none;
+	-webkit-appearance: none;
+	cursor: pointer;
+	transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.ctgen-switch[type="checkbox"]::before,
+.ctgen-switch[type="checkbox"]:checked::before {
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	float: none;
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+	transition: transform 0.2s ease;
+}
+
+.ctgen-switch[type="checkbox"]:hover {
+	border-color: #8c8f94;
+}
+
+.ctgen-switch[type="checkbox"]:checked {
+	border-color: #008a20;
+	background: #00a32a;
+}
+
+.ctgen-switch[type="checkbox"]:checked:hover {
+	background: #008a20;
+}
+
+/* Track 46px - 2px border - 2 x 2px gap - 18px knob = 22px of travel. */
+.ctgen-switch[type="checkbox"]:checked::before {
+	transform: translateX(22px);
+}
+
+.ctgen-switch[type="checkbox"]:focus {
+	outline: none;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.ctgen-switch[type="checkbox"]:focus-visible {
+	outline: 2px solid #00a32a;
+	outline-offset: 2px;
+}
+
+.ctgen-switch[type="checkbox"]:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ctgen-switch[type="checkbox"],
+	.ctgen-switch[type="checkbox"]::before {
+		transition: none;
+	}
+}

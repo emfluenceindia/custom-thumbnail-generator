@@ -1,0 +1,70 @@
+/* WebP conversion controls. Same layout as the regenerate progress UI, separate IDs, blue fill. */
+
+#ctgen-webp-ui {
+	padding: 6px;
+	box-sizing: border-box;
+	width: 95%;
+}
+
+#ctgen-webp-ui p {
+	margin: 0 auto;
+}
+
+#ctgen-webp-ui button {
+	margin: 8px 0;
+}
+
+#ctgen-webp-progressbar {
+	margin: 10px 0;
+	width: 100%;
+	height: 30px;
+	background: #eee;
+	position: relative;
+}
+
+#ctgen-webp-progress {
+	width: 0%;
+	height: 30px;
+	background: #2271b1;
+	box-sizing: border-box;
+	transition: width 0.3s;
+}
+
+#ctgen-webp-percentage {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	line-height: 30px;
+	text-align: center;
+	font-weight: 500;
+	color: #1d2327;
+}
+
+#ctgen-webp-percentage.ctgen-webp-percentage-light {
+	color: #fff;
+}
+
+#ctgen-webp-status {
+	margin-top: 4px;
+	font-weight: 500;
+}
+
+#ctgen-webp-errors {
+	margin: 6px 0 0 18px;
+	list-style: disc;
+	color: #8a2424;
+}
+
+#ctgen-webp-ui .ctgen-webp-gif-notice {
+	margin: 10px 0 0;
+}
+
+.ctgen-custom-size-list .ctgen-webp-convert-size {
+	margin-left: 10px;
+}
+
+/* Default sizes table sits under the custom sizes table: align both right edges. */
+#ctgen-tables-column .ctgen-form-container {
+	padding-right: 0;
+}
