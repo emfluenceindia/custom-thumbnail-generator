@@ -152,6 +152,11 @@ class CTGEN_Attachment_Summary {
 					'regenSome'  => __( 'WebP regenerated for %1$s files; %2$s failed.', 'custom-thumbnail-generator' ),
 					/* translators: %s: error message. */
 					'regenError' => __( 'WebP could not be regenerated: %s', 'custom-thumbnail-generator' ),
+					'serveBusy'  => __( 'Saving...', 'custom-thumbnail-generator' ),
+					'serveOn'    => __( 'Visitors now get the WebP copy of this image. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
+					'serveOff'   => __( 'Visitors get the original image again. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
+					/* translators: %s: error message. */
+					'serveError' => __( 'WebP serving could not be changed: %s', 'custom-thumbnail-generator' ),
 				),
 			)
 		);
@@ -683,7 +688,7 @@ class CTGEN_Attachment_Summary {
 		$open = '<div class="ctgen-webp-cell" id="ctgen-webp-cell-' . $attachment_id . '" data-webp="' . $copies . '" data-files="' . $sources . '" data-bytes="' . $webp_bytes . '" data-source-bytes="' . $source_bytes . '">';
 
 		if ( 0 === $copies ) {
-			return $open . '<span class="ctgen-webp-status">' . esc_html__( 'No WebP copies yet', 'custom-thumbnail-generator' ) . '</span>' . $button . '</div>';
+			return $open . '<span class="ctgen-webp-status">' . esc_html__( 'No WebP copies yet', 'custom-thumbnail-generator' ) . '</span>' . self::render_serve_control( $attachment_id ) . $button . '</div>';
 		}
 
 		/* translators: 1: total size, 2: number of files. */
@@ -711,6 +716,86 @@ class CTGEN_Attachment_Summary {
 			$html .= '<div class="ctgen-webp-ratio ctgen-webp-larger">' . esc_html( __( 'WebP is not smaller than the original - no saving', 'custom-thumbnail-generator' ) . $based_on ) . '</div>';
 		}
 
-		return $html . $button . '</div>';
+		return $html . self::render_serve_control( $attachment_id ) . $button . '</div>';
+	}
+
+	/**
+	 * HTML of the expandable list of sizes that keep their original, with
+	 * the reason for each (escaped). Empty when nothing is skipped.
+	 *
+	 * @param array $skipped Size => reason code, from the serve manifest.
+	 * @return string
+	 */
+	private static function render_skipped_list( $skipped ) {
+		if ( array() === $skipped ) {
+			return '';
+		}
+
+		$reasons = array(
+			'missing'            => __( 'no WebP file yet', 'custom-thumbnail-generator' ),
+			'source_missing'     => __( 'the original file is missing', 'custom-thumbnail-generator' ),
+			'larger_than_source' => __( 'the WebP is not smaller than the original', 'custom-thumbnail-generator' ),
+			'invalid'            => __( 'the .webp file is not a valid WebP image', 'custom-thumbnail-generator' ),
+			'dimension_mismatch' => __( 'the WebP is out of date (different dimensions); regenerate WebP', 'custom-thumbnail-generator' ),
+			'not_owned'          => __( 'the .webp file belongs to another Media Library item', 'custom-thumbnail-generator' ),
+			'unreachable'        => __( "the WebP exists but its URL doesn't load; check media offload or CDN settings", 'custom-thumbnail-generator' ),
+		);
+		$items   = '';
+
+		foreach ( $skipped as $size => $reason ) {
+			if ( 'full' === $size ) {
+				$name = __( 'Main file', 'custom-thumbnail-generator' );
+			} elseif ( 'original_image' === $size ) {
+				$name = __( 'Original upload', 'custom-thumbnail-generator' );
+			} else {
+				$name = (string) $size;
+			}
+
+			$items .= '<li>' . esc_html( $name . ': ' . ( isset( $reasons[ $reason ] ) ? $reasons[ $reason ] : (string) $reason ) ) . '</li>';
+		}
+
+		/* translators: %s: number of sizes. */
+		$summary = sprintf( _n( '%s size shows the original', '%s sizes show the original', count( $skipped ), 'custom-thumbnail-generator' ), number_format_i18n( count( $skipped ) ) );
+
+		return '<details class="ctgen-webp-serve-skipped"><summary>' . esc_html( $summary ) . '</summary><ul>' . $items . '</ul></details>';
+	}
+
+	/**
+	 * HTML of the "Serve WebP" switch for one image (escaped).
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return string
+	 */
+	private static function render_serve_control( $attachment_id ) {
+		$toggle_id = 'ctgen-webp-serve-' . $attachment_id;
+		$manifest  = ctgen_webp_manifest()->get( $attachment_id );
+		$status    = '';
+		$state     = '';
+
+		if ( null !== $manifest ) {
+			$served = count( $manifest['sizes'] );
+			$total  = $served + count( $manifest['skipped'] );
+			$state  = ' checked="checked"';
+			$status = 0 === $served
+				? '<p class="ctgen-webp-serve-status ctgen-webp-serve-warning">' . esc_html__( 'Serving is on, but no size has a valid WebP right now, so visitors get the original.', 'custom-thumbnail-generator' ) . '</p>'
+				/* translators: 1: sizes served as WebP, 2: all sizes of the image. */
+				: '<p class="ctgen-webp-serve-status">' . esc_html( sprintf( _n( 'Serving WebP: %1$s of %2$s size', 'Serving WebP: %1$s of %2$s sizes', $total, 'custom-thumbnail-generator' ), number_format_i18n( $served ), number_format_i18n( $total ) ) ) . '</p>';
+			$status .= self::render_skipped_list( $manifest['skipped'] );
+		} else {
+			// Not serving: can it be turned on? Only when at least one WebP copy passes every check.
+			$preview = ctgen_webp_manifest()->build( $attachment_id );
+
+			if ( is_wp_error( $preview ) || array() === $preview['sizes'] ) {
+				$state  = ' disabled="disabled" aria-describedby="' . esc_attr( $toggle_id . '-why' ) . '"';
+				$status = '<p class="ctgen-webp-serve-status" id="' . esc_attr( $toggle_id . '-why' ) . '">' . esc_html__( 'No valid WebP copy to serve. Generate WebP first.', 'custom-thumbnail-generator' ) . '</p>';
+			}
+		}
+
+		return '<div class="ctgen-webp-serve">'
+			. '<input type="checkbox" role="switch" class="ctgen-webp-serve-toggle" id="' . esc_attr( $toggle_id ) . '" data-id="' . $attachment_id . '"' . $state . ' />'
+			. '<label for="' . esc_attr( $toggle_id ) . '">' . esc_html__( 'Serve WebP', 'custom-thumbnail-generator' ) . '</label>'
+			. $status
+			. '<span class="ctgen-webp-serve-message" role="status" aria-live="polite"></span>'
+			. '</div>';
 	}
 }

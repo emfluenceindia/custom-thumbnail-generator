@@ -111,6 +111,75 @@ function ctgen_webp_handlers() {
 	return $instance;
 }
 
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-url-mapper.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-manifest.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-replacer.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-health-check.php';
+require_once CTGEN_WEBP_DIR . 'class-ctgen-webp-serve-ajax.php';
+ctgen_webp_replacer()->register();
+ctgen_webp_health_check()->register();
+ctgen_webp_serve_ajax()->register();
+
+/**
+ * The "serve WebP" manifest service (one instance per request).
+ *
+ * @return CTGEN_Webp_Manifest
+ */
+function ctgen_webp_manifest() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Manifest( ctgen_webp_handlers() );
+	}
+
+	return $instance;
+}
+
+/**
+ * The front-end WebP replacer (one instance per request).
+ *
+ * @return CTGEN_Webp_Replacer
+ */
+function ctgen_webp_replacer() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Replacer( ctgen_webp_manifest(), new CTGEN_Webp_Url_Mapper() );
+	}
+
+	return $instance;
+}
+
+/**
+ * The "Serve WebP" toggle's AJAX endpoint (one instance per request).
+ *
+ * @return CTGEN_Webp_Serve_Ajax
+ */
+function ctgen_webp_serve_ajax() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Serve_Ajax( ctgen_webp_manifest(), ctgen_webp_handlers() );
+	}
+
+	return $instance;
+}
+
+/**
+ * The serve manifest health check (one instance per request).
+ *
+ * @return CTGEN_Webp_Health_Check
+ */
+function ctgen_webp_health_check() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new CTGEN_Webp_Health_Check( ctgen_webp_manifest() );
+	}
+
+	return $instance;
+}
+
 require_once CTGEN_PLUGIN_PATH . 'class-ctgen-usage-scanner.php';
 require_once CTGEN_PLUGIN_PATH . 'class-ctgen-attachment-summary.php';
 ctgen_attachment_summary();

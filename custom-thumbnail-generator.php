@@ -28,6 +28,29 @@ if ( ! defined( 'CTGEN_PLUGIN_VERSION' ) ) {
 require_once plugin_dir_path( __FILE__ ) . 'includes/init.php';
 
 /**
+ * Plugin activation: schedules the WebP serving health check.
+ *
+ * @return void
+ */
+function ctgen_webp_activate() {
+	ctgen_webp_health_check()->activate();
+}
+
+/**
+ * Plugin deactivation: removes the WebP serving health check (on every site
+ * when deactivated network-wide). Serving state is kept.
+ *
+ * @param bool $network_wide Whether the plugin is being deactivated network-wide.
+ * @return void
+ */
+function ctgen_webp_deactivate( $network_wide ) {
+	ctgen_webp_health_check()->deactivate( (bool) $network_wide );
+}
+
+register_activation_hook( __FILE__, 'ctgen_webp_activate' );
+register_deactivation_hook( __FILE__, 'ctgen_webp_deactivate' );
+
+/**
  * Add a Settings link (plugin action link) under the plugin name on main plugin page.
  *
  * @param  array $links An array of plugin action links.

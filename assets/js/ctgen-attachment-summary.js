@@ -8,8 +8,9 @@
  * from this file by v2/tools/build-js.js - never edit the .min.js by hand.
  *
  * Endpoints:
- *   ctgen_usage_get_ids -> { ids: [ ... ] }
- *   ctgen_usage_scan    -> { results: { id: { count, html } }, errors: { id: message } }
+ *   ctgen_usage_get_ids   -> { ids: [ ... ] }
+ *   ctgen_usage_scan      -> { results: { id: { count, html } }, errors: { id: message } }
+ *   ctgen_webp_set_serve  -> { state: 'on'|'off', html }  ("Serve WebP" switch)
  */
 ( function ( $ ) {
 	'use strict';
@@ -575,6 +576,54 @@
 			} );
 	}
 
+	/* --------------------------------------------------------- serve WebP */
+
+	/**
+	 * Turns "serve WebP" on or off for one image, then swaps in the refreshed
+	 * cell and announces the result. On failure the switch goes back to its
+	 * previous position.
+	 *
+	 * @param {HTMLElement} input The changed "Serve WebP" switch.
+	 */
+	function toggleServe( input ) {
+		var $input = $( input );
+		var id = parseInt( $input.attr( 'data-id' ), 10 );
+		var state = $input.prop( 'checked' ) ? 'on' : 'off';
+		var $cell = $input.closest( '.ctgen-webp-cell' );
+		var $message = $cell.find( '.ctgen-webp-serve-message' );
+
+		if ( ! id ) {
+			return;
+		}
+
+		function failed( reason ) {
+			$input.prop( 'checked', 'off' === state ).prop( 'disabled', false );
+			$message.text( format( i18n.serveError, reason ) );
+		}
+
+		$input.prop( 'disabled', true );
+		$message.text( i18n.serveBusy );
+
+		request( { action: 'ctgen_webp_set_serve', id: id, state: state } )
+			.done( function ( response ) {
+				var data = response && response.data;
+				var $new;
+
+				if ( response && true === response.success && data && 'string' === typeof data.html && ( 'on' === data.state || 'off' === data.state ) ) {
+					$new = $( $.parseHTML( data.html ) );
+					$cell.replaceWith( $new );
+					$new.find( '.ctgen-webp-serve-message' ).text( 'on' === data.state ? i18n.serveOn : i18n.serveOff );
+					$new.find( '.ctgen-webp-serve-toggle' ).trigger( 'focus' );
+					return;
+				}
+
+				failed( data && data.message ? data.message : i18n.malformed );
+			} )
+			.fail( function ( xhr, textStatus ) {
+				failed( isAuthFailure( xhr ) ? i18n.auth : failureReason( xhr, textStatus ) );
+			} );
+	}
+
 	/* -------------------------------------------------------- image viewer */
 
 	var viewer = {};
@@ -673,6 +722,11 @@
 		$( document ).on( 'click', '.ctgen-webp-regenerate', function ( event ) {
 			event.preventDefault();
 			regenerateWebp( this );
+		} );
+
+		// Delegated: WebP cells are replaced after every switch change.
+		$( document ).on( 'change', '.ctgen-webp-serve-toggle', function () {
+			toggleServe( this );
 		} );
 
 		// Delegated: cells are replaced after every scan.

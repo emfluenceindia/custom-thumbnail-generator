@@ -269,6 +269,10 @@ class CTGEN_Webp_Ajax_Handlers {
 			++$counts[ $outcome['outcome'] ];
 		}
 
+		if ( $counts['converted'] > 0 ) {
+			$this->announce_files_changed( $attachment_id );
+		}
+
 		return array(
 			'attachment_id' => $attachment_id,
 			'sizes'         => $sizes,
@@ -323,7 +327,30 @@ class CTGEN_Webp_Ajax_Handlers {
 			);
 		}
 
-		return $this->convert_entry( $prepared, $prepared['entries'][ $part ], $attachment_id, $force );
+		$outcome = $this->convert_entry( $prepared, $prepared['entries'][ $part ], $attachment_id, $force );
+
+		if ( 'converted' === $outcome['outcome'] ) {
+			$this->announce_files_changed( $attachment_id );
+		}
+
+		return $outcome;
+	}
+
+	/**
+	 * Tells listeners (the serve manifest's health check) that WebP files of
+	 * an attachment were written, so anything derived from them is rebuilt in
+	 * the same request.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return void
+	 */
+	private function announce_files_changed( $attachment_id ) {
+		/**
+		 * Fires after this plugin wrote (created or overwrote) WebP copies of an attachment.
+		 *
+		 * @param int $attachment_id Attachment ID.
+		 */
+		do_action( 'ctgen_webp_files_changed', (int) $attachment_id );
 	}
 
 	/**
@@ -513,12 +540,14 @@ class CTGEN_Webp_Ajax_Handlers {
 	 * this attachment's own earlier copy: that one counts as a conflict only
 	 * when it is a Media Library item of its own.
 	 *
+	 * Public so CTGEN_Webp_Manifest applies the same rule.
+	 *
 	 * @param string $directory     Absolute, trailing-slashed directory of the attachment.
 	 * @param string $attached_file Absolute path of the attached file.
 	 * @param array  $metadata      The attachment's metadata.
 	 * @return bool
 	 */
-	private function has_name_conflict( $directory, $attached_file, $metadata ) {
+	public function has_name_conflict( $directory, $attached_file, $metadata ) {
 		$own_files = array( wp_basename( $attached_file ) );
 
 		if ( ! empty( $metadata['original_image'] ) && is_string( $metadata['original_image'] ) ) {
@@ -556,12 +585,13 @@ class CTGEN_Webp_Ajax_Handlers {
 	}
 
 	/**
-	 * ID of the Media Library item whose main file is $path, or 0.
+	 * ID of the Media Library item whose main file is $path, or 0. Public so
+	 * CTGEN_Webp_Manifest applies the same ownership rule.
 	 *
 	 * @param string $path Absolute file path inside the uploads directory.
 	 * @return int
 	 */
-	private function attachment_id_for_file( $path ) {
+	public function attachment_id_for_file( $path ) {
 		$uploads = wp_get_upload_dir();
 		$basedir = trailingslashit( $uploads['basedir'] );
 
@@ -679,15 +709,7 @@ class CTGEN_Webp_Ajax_Handlers {
 
 		$image_info = wp_getimagesize( $destination_path );
 
-		if ( false === $image_info || empty( $image_info['mime'] ) || 'image/webp' !== $image_info['mime'] ) {
-			return false;
-		}
-
-		if ( empty( $size_meta['width'] ) || empty( $size_meta['height'] ) ) {
-			return false;
-		}
-
-		if ( (int) $size_meta['width'] !== (int) $image_info[0] || (int) $size_meta['height'] !== (int) $image_info[1] ) {
+		if ( '' !== $this->webp_problem( $image_info, $size_meta ) ) {
 			return false;
 		}
 
@@ -695,6 +717,33 @@ class CTGEN_Webp_Ajax_Handlers {
 			'width'  => (int) $image_info[0],
 			'height' => (int) $image_info[1],
 		);
+	}
+
+	/**
+	 * The rule for "valid and current": what, if anything, is wrong with a
+	 * WebP copy, judged from its wp_getimagesize() result against the source
+	 * size's metadata. Shared with CTGEN_Webp_Manifest so both features
+	 * judge a WebP copy the same way.
+	 *
+	 * @param array|false $image_info wp_getimagesize() result for the WebP file.
+	 * @param array       $size_meta  The source size's metadata entry (must contain 'width'/'height').
+	 * @return string '' when valid and current, 'invalid' when it isn't a real WebP,
+	 *                'dimension_mismatch' when its dimensions don't match the source's.
+	 */
+	public function webp_problem( $image_info, $size_meta ) {
+		if ( false === $image_info || empty( $image_info['mime'] ) || 'image/webp' !== $image_info['mime'] ) {
+			return 'invalid';
+		}
+
+		if ( empty( $size_meta['width'] ) || empty( $size_meta['height'] ) ) {
+			return 'dimension_mismatch';
+		}
+
+		if ( (int) $size_meta['width'] !== (int) $image_info[0] || (int) $size_meta['height'] !== (int) $image_info[1] ) {
+			return 'dimension_mismatch';
+		}
+
+		return '';
 	}
 
 	/**

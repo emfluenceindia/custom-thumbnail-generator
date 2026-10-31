@@ -58,3 +58,74 @@ Avoid `.htaccess` rewriting based on the `Accept` header as the main method. It 
 - **Plan the data now for 2a (deleting originals):** if each attachment has a clear state (e.g. `original` → `webp-served` → `webp-only`), the storage-saving step later builds on this one instead of needing a rewrite.
 
 **Recommendation:** ship the per-image toggle with URL rewriting first, then add the "check that it works" step. That check is the hardest part for other plugins to copy, because it relies on the usage scanner.
+
+---
+
+## Planning to make over not-ready and Gaps
+
+Date: 2026-10-30
+Context: a readiness review of `replacement-skill.md` found 3 design flaws that would stop or mislead the build ("not ready") and 5 open decisions ("Gaps"). This section records how each one is closed and why. The executable version of the same plan is appended to `replacement-skill.md` under the same heading, as binding amendments that take precedence over the earlier sections of the skill.
+
+### Not ready
+
+**1. Rule "no file is ever overwritten" vs "Regenerate this size"**
+
+- *Problem:* regenerating a size skipped as `invalid` or `dimension_mismatch` overwrites that `.webp` through the conversion engine, which the rule forbids. An agent would either refuse to build the button or break the rule.
+- *Plan:* narrow the rule to the serving code (manifest, mapper, replacer, health check, verification). These never write, move or delete a file. The only file write the feature can trigger is "Regenerate this size", and only through the existing engine (`CTGEN_Webp_Ajax_Handlers::convert_part()`), which already refuses to overwrite a Media Library `.webp` and refuses name clashes. Originals and thumbnails stay untouchable without exception.
+- *Proof:* tests that regeneration rewrites only the one `.webp`, that originals and thumbnails keep the same md5, and that a `.webp` owned by another attachment is refused.
+
+**2. `unreachable` flip-flop**
+
+- *Problem:* verification marks a size `unreachable` (its URL 404s, e.g. offloaded to S3/CDN). The next health check rebuilds the manifest from disk, sees a valid file and puts the size back, so the broken URL is served again.
+- *Plan:* store unreachable sizes in their own `unreachable` key in the manifest, with the WebP's basename, size in bytes and modification time at the moment it failed. Any rebuild keeps the mark while those three still match the file on disk. The mark is cleared only when a later verification gets `200` + `image/webp`, when the file changes, or when serving is turned off and on again.
+- *Proof:* tests that a health check run doesn't revive an unreachable size, that a changed file clears the mark, and that a successful verification clears it.
+
+**3. Health check can switch serving back on after the admin switched it off**
+
+- *Problem:* a rebuild that started before the admin turned serving off can write the manifest afterwards and switch serving back on.
+- *Plan:* only the "turn on" action may create the manifest meta. Every other rebuild (health check, lifecycle hooks, verification, regenerate) reads the meta again from the database, bypassing the object cache, just before writing, and writes nothing if it's gone. A tiny window remains between that re-read and the write; it is documented as acceptable because the next toggle or health check corrects it and no file is ever at risk.
+- *Proof:* a test that deletes the meta while a rebuild is in progress (through a seam) and asserts the meta is still absent afterwards; a test that rebuilding an attachment that isn't serving writes nothing.
+
+### Gaps
+
+**4. Browsers without WebP**
+
+- *Decision:* swap the URL directly for everyone (about 97% browser support). No `<picture>`, no user-agent sniffing, no `Accept`-header negotiation, consistent with §2 "out of scope".
+- *Plan:* write it into the skill as a recorded decision so no agent invents a fallback. Add a readme FAQ entry and a short help text by the toggle explaining the trade-off, with "turn serving off" as the remedy.
+
+**5. `wp_get_attachment_url` (lightbox "link to media file", `og:image`, many themes)**
+
+- *Decision:* don't filter it. It is also used by admin screens, exports, REST, the editor and many plugins for file operations, so filtering it risks writing WebP URLs into stored content and breaking integrations.
+- *Plan:* a regression test asserts it returns the original while serving is on. Verification (R4) reports original URLs found in `<a href>` and `<meta property="og:image">` as "original by design" instead of counting them as failures.
+
+**6. Multisite**
+
+- *Finding:* `readme.txt` already promises "activate network-wide to manage thumbnails across subsites", so multisite has to work.
+- *Plan:*
+  - Post meta, options and cron events are per site already.
+  - Schedule the health check per site on `admin_init` when it's missing. A network activation runs the activation hook only once, so this check is what covers every subsite.
+  - Network deactivation unschedules the event on every site.
+  - `uninstall.php` loops over all sites for the new keys and the cron event.
+  - The existing uninstall cleanup (`_ctgen_usage` etc.) has the same single-site gap. It is reported as a follow-up, not silently changed.
+
+**7. Page caches and CDNs**
+
+- *Plan:* no purge integrations (still out of scope). Instead:
+  - Every success message for toggle, bulk and regenerate tells the admin to purge the page cache or CDN if they use one.
+  - A new action `ctgen_webp_serving_changed( $attachment_id, $state )` fires after every change, so site owners and cache plugins can purge from their side.
+  - A readme FAQ entry covers it.
+
+**8. Small accuracy fixes**
+
+- The plugin has no activation or deactivation hooks today. They must be added to `custom-thumbnail-generator.php`, which is a pre-existing file and needs a `.bak` first.
+- Some servers answer `HEAD` with `405`/`501`. The reachability check retries once with `GET` using the same limits.
+- The `DISABLED` comment in §3.1 is stated to have no effect.
+
+### Where each fix lands
+
+| Fix | Milestone |
+|---|---|
+| 2 (manifest shape for `unreachable`), 3 (rebuild rule) | R1 |
+| 3 (health check), 5 (regression test), 6 (cron per site, deactivation), 8 (hooks) | R2 |
+| 1, 4 (help text, readme), 6 (uninstall), 7 | R3 |
+| 2 (setting and clearing the mark), 5 (verification wording), 8 (HEAD → GET retry) | R4 |
