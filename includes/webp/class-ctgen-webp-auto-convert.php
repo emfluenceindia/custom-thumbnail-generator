@@ -238,19 +238,27 @@ class CTGEN_Webp_Auto_Convert {
 			$notices .= '<p class="ctgen-auto-queue">' . esc_html( sprintf( _n( '%s image is waiting to be converted in the background.', '%s images are waiting to be converted in the background.', $pending, 'custom-thumbnail-generator' ), number_format_i18n( $pending ) ) ) . '</p>';
 		}
 
+		// Whole sentences, so translators can move the bold part: %1$s and %2$s open and close it.
 		$points = array(
-			array( __( 'Does not change what visitors see.', 'custom-thumbnail-generator' ), __( 'Choose which images are served as WebP on the Attachment Summary page.', 'custom-thumbnail-generator' ) ),
-			array( __( 'Existing images are not converted.', 'custom-thumbnail-generator' ), __( 'Use "Convert All Thumbnails to WebP" below.', 'custom-thumbnail-generator' ) ),
-			array( __( 'Disk space:', 'custom-thumbnail-generator' ), __( 'adds a WebP file for every size. Check your storage limit.', 'custom-thumbnail-generator' ) ),
-			array( __( 'Server load:', 'custom-thumbnail-generator' ), __( 'uses CPU and memory while converting; slower on modest hosting.', 'custom-thumbnail-generator' ) ),
-			array( __( 'Timing:', 'custom-thumbnail-generator' ), __( 'runs through WP-Cron, so on quiet sites copies can appear late.', 'custom-thumbnail-generator' ) ),
-			array( __( 'Already have a WebP tool', 'custom-thumbnail-generator' ), __( '(host, CDN or plugin)? Leave this off.', 'custom-thumbnail-generator' ) ),
-			array( __( 'Turning it off', 'custom-thumbnail-generator' ), __( 'stops new conversions; existing copies are kept.', 'custom-thumbnail-generator' ) ),
+			/* translators: %1$s and %2$s: start and end of bold text. */
+			__( '%1$sDoes not change what visitors see.%2$s Choose which images are served as WebP on the Attachment Summary page.', 'custom-thumbnail-generator' ),
+			/* translators: %1$s and %2$s: start and end of bold text. */
+			__( '%1$sExisting images are not converted.%2$s Use "Convert All Thumbnails to WebP" below.', 'custom-thumbnail-generator' ),
+			/* translators: %1$s and %2$s: start and end of bold text. */
+			__( '%1$sDisk space:%2$s adds a WebP file for every size. Check your storage limit.', 'custom-thumbnail-generator' ),
+			/* translators: %1$s and %2$s: start and end of bold text. */
+			__( '%1$sServer load:%2$s uses CPU and memory while converting; slower on modest hosting.', 'custom-thumbnail-generator' ),
+			/* translators: %1$s and %2$s: start and end of bold text. */
+			__( '%1$sTiming:%2$s runs through WP-Cron, so on quiet sites copies can appear late.', 'custom-thumbnail-generator' ),
+			/* translators: %1$s and %2$s: start and end of bold text. */
+			__( '%1$sAlready have a WebP tool%2$s (host, CDN or plugin)? Leave this off.', 'custom-thumbnail-generator' ),
+			/* translators: %1$s and %2$s: start and end of bold text. */
+			__( '%1$sTurning it off%2$s stops new conversions; existing copies are kept.', 'custom-thumbnail-generator' ),
 		);
 
 		$items = '';
 		foreach ( $points as $point ) {
-			$items .= '<li><strong>' . esc_html( $point[0] ) . '</strong> ' . esc_html( $point[1] ) . '</li>';
+			$items .= '<li>' . sprintf( esc_html( $point ), '<strong>', '</strong>' ) . '</li>';
 		}
 
 		return '<div class="ctgen-auto-card ' . ( $on ? 'is-on' : 'is-off' ) . '" id="ctgen-webp-auto">'

@@ -3,7 +3,7 @@
 Date: 2026-10-30. Scope (user request): only the per-image switch from R3, to be tested before the rest of R3 (bulk action, "Regenerate this size", uninstall cleanup, readme) is built.
 
 ### What was built
-- `webp/class-ctgen-webp-serve-ajax.php` (new): `set_serve( $id, 'on'|'off' )` and AJAX action `ctgen_webp_set_serve` (nonce `ctgen_media_actions` → `manage_options` → `absint`/`sanitize_text_field`; errors as code + safe message; response `{ state, html }`, never a path).
+- `includes/webp/class-ctgen-webp-serve-ajax.php` (new): `set_serve( $id, 'on'|'off' )` and AJAX action `ctgen_webp_set_serve` (nonce `ctgen_media_actions` → `manage_options` → `absint`/`sanitize_text_field`; errors as code + safe message; response `{ state, html }`, never a path).
   - On: refused with `ctgen_webp_nothing_to_serve` when no WebP passes the checks (nothing stored).
   - Fires `ctgen_webp_serving_changed( $id, 'on'|'off' )` only on a real change (§10 G4), for cache purging.
 - `includes/class-ctgen-attachment-summary.php` (`.bak8`): the WebP status cell gets a "Serve WebP" switch (real `<input type="checkbox" role="switch">` + `<label>`), with:

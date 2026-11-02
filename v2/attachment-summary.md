@@ -95,12 +95,12 @@ and override any convenience:
   Page hook suffixes are read with `ctgen_admin_page_hook( 'settings' | 'attachment_summary' )`
   (never hard-code them; they depend on the translated menu title).
 - Converter: `CTGEN_Webp_Converter::convert( $source_path, $destination_path )` in
-  `webp/class-ctgen-webp-converter.php`. JPEG and PNG only (`ALLOWED_SOURCE_MIME_TYPES`);
+  `includes/webp/class-ctgen-webp-converter.php`. JPEG and PNG only (`ALLOWED_SOURCE_MIME_TYPES`);
   GIF is rejected with `ctgen_webp_gif_excluded` (user decision). Writes via a verified temp
   file and atomic rename; never modifies the source; returns path/file/width/height/mime or
   a `WP_Error` with a specific code. It does not set quality explicitly (editor default).
 - Existing WebP copies: `<file name>.webp` next to each file, created by the bulk/per-size
-  conversion (`webp/class-ctgen-webp-ajax-handlers.php`). The bulk run ("all_sizes") covers
+  conversion (`includes/webp/class-ctgen-webp-ajax-handlers.php`). The bulk run ("all_sizes") covers
   every thumbnail, the full-size file (`full`, the "-scaled" copy for large uploads) and the
   untouched original upload (`original_image`); per-size buttons cover one thumbnail size.
   An attachment whose base name is shared with another image file in the same folder

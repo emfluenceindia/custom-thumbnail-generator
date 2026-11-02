@@ -168,7 +168,7 @@
 		}
 
 		ui.fill.css( 'width', pct + '%' );
-		ui.percent.text( pct + '%' ).toggleClass( 'ctgen-webp-percentage-light', pct >= 50 );
+		ui.percent.text( format( i18n.percent, pct ) ).toggleClass( 'ctgen-webp-percentage-light', pct >= 50 );
 		ui.bar.attr( 'aria-valuenow', pct );
 		ui.counts.text( text ).attr( {
 			'data-processed': run.index,

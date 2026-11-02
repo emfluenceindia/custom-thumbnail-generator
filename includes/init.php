@@ -26,7 +26,7 @@ if ( ! defined( 'CTGEN_PLUGIN_DIR' ) ) {
 	define( 'CTGEN_PLUGIN_DIR', plugin_dir_url( __DIR__ ) );
 }
 if ( ! defined( 'CTGEN_WEBP_DIR' ) ) {
-	define( 'CTGEN_WEBP_DIR', plugin_dir_path( __DIR__ ) . 'webp/' );
+	define( 'CTGEN_WEBP_DIR', plugin_dir_path( __FILE__ ) . 'webp/' );
 }
 
 if ( ! defined( 'CTGEN_NATIVE_THUMB_SIZES' ) ) {
@@ -279,6 +279,8 @@ function ctgen_enqueue_scripts( $hook_suffix = '' ) {
 					'processed'         => __( 'Processed %1$s of %2$s', 'custom-thumbnail-generator' ),
 					'complete'          => __( 'Thumbnail generation complete!', 'custom-thumbnail-generator' ),
 					'regenerate'        => __( 'Regenerate Thumbnails', 'custom-thumbnail-generator' ),
+					/* translators: %s: percentage complete, e.g. "50" in "50%". */
+					'percent'           => __( '%s%%', 'custom-thumbnail-generator' ),
 				),
 			)
 		);
@@ -354,6 +356,8 @@ function ctgen_enqueue_webp_scripts( $hook_suffix ) {
 				/* translators: %s: image size name, e.g. "thumbnail". */
 				'findingSize'  => __( 'Finding images to convert for the %s size...', 'custom-thumbnail-generator' ),
 				'busy'         => __( 'Converting...', 'custom-thumbnail-generator' ),
+				/* translators: %s: percentage complete, e.g. "50" in "50%". */
+				'percent'      => __( '%s%%', 'custom-thumbnail-generator' ),
 				'nothing'      => __( 'No JPEG or PNG images found. Nothing to convert.', 'custom-thumbnail-generator' ),
 				/* translators: 1: number of images processed so far, 2: total number of images. */
 				'processing'   => __( 'Processing image %1$s of %2$s...', 'custom-thumbnail-generator' ),

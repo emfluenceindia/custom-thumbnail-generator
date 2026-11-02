@@ -152,6 +152,11 @@ class CTGEN_Attachment_Summary {
 					'regenSome'     => __( 'WebP regenerated for %1$s files; %2$s failed.', 'custom-thumbnail-generator' ),
 					/* translators: %s: error message. */
 					'regenError'    => __( 'WebP could not be regenerated: %s', 'custom-thumbnail-generator' ),
+					/* translators: 1: image size name, 2: message. */
+					'sizeMessage'   => __( '%1$s: %2$s', 'custom-thumbnail-generator' ),
+					'errorJoin'     => _x( '; ', 'separator between error messages', 'custom-thumbnail-generator' ),
+					/* translators: %s: percentage complete, e.g. "50" in "50%". */
+					'percent'       => __( '%s%%', 'custom-thumbnail-generator' ),
 					'serveBusy'     => __( 'Saving...', 'custom-thumbnail-generator' ),
 					'serveOn'       => __( 'Visitors now get the WebP copy of this image. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
 					'serveOff'      => __( 'Visitors get the original image again. If you use a page cache or CDN, purge it to see the change.', 'custom-thumbnail-generator' ),
@@ -350,7 +355,7 @@ class CTGEN_Attachment_Summary {
 					'kind' => 'post',
 					'id'   => $parent_id,
 				),
-				'sources' => array( __( 'attached', 'custom-thumbnail-generator' ) ),
+				'sources' => array( _x( 'attached', 'how a post uses an image', 'custom-thumbnail-generator' ) ),
 			);
 		}
 
@@ -382,8 +387,14 @@ class CTGEN_Attachment_Summary {
 			$state = '';
 		} else {
 			/* translators: %s: time since the scan, e.g. "5 mins". */
-			$when  = esc_html( sprintf( __( 'Scanned %s ago', 'custom-thumbnail-generator' ), human_time_diff( (int) $cached['scanned_at'] ) ) );
-			$state = '<span class="ctgen-usage-when">' . ( empty( $cached['refs'] ) ? esc_html__( 'No usage found', 'custom-thumbnail-generator' ) . ' - ' : '' ) . $when . '</span>';
+			$when = sprintf( __( 'Scanned %s ago', 'custom-thumbnail-generator' ), human_time_diff( (int) $cached['scanned_at'] ) );
+
+			if ( empty( $cached['refs'] ) ) {
+				/* translators: %s: when the image was scanned, e.g. "Scanned 5 mins ago". */
+				$when = sprintf( __( 'No usage found - %s', 'custom-thumbnail-generator' ), $when );
+			}
+
+			$state = '<span class="ctgen-usage-when">' . esc_html( $when ) . '</span>';
 		}
 
 		if ( empty( $places ) ) {
@@ -427,10 +438,10 @@ class CTGEN_Attachment_Summary {
 		$key      = isset( $ref['key'] ) ? (string) $ref['key'] : '';
 		$builders = CTGEN_Usage_Scanner::BUILDER_META_KEYS;
 		$labels   = array(
-			'content'         => __( 'content', 'custom-thumbnail-generator' ),
-			'gallery'         => __( 'gallery', 'custom-thumbnail-generator' ),
-			'featured_image'  => __( 'featured image', 'custom-thumbnail-generator' ),
-			'product_gallery' => __( 'product gallery', 'custom-thumbnail-generator' ),
+			'content'         => _x( 'content', 'how a post uses an image', 'custom-thumbnail-generator' ),
+			'gallery'         => _x( 'gallery', 'how a post uses an image', 'custom-thumbnail-generator' ),
+			'featured_image'  => _x( 'featured image', 'how a post uses an image', 'custom-thumbnail-generator' ),
+			'product_gallery' => _x( 'product gallery', 'how a post uses an image', 'custom-thumbnail-generator' ),
 			/* translators: %s: page builder name. */
 			'builder'         => sprintf( __( '%s data', 'custom-thumbnail-generator' ), isset( $builders[ $key ] ) ? $builders[ $key ] : $key ),
 			/* translators: %s: custom field name. */
@@ -484,7 +495,10 @@ class CTGEN_Attachment_Summary {
 
 		$name = $link ? '<a href="' . esc_url( $link ) . '">' . esc_html( $title ) . '</a>' : esc_html( $title );
 
-		return $name . ' <span class="ctgen-usage-meta">(' . esc_html( implode( ', ', $details ) ) . ') - ' . esc_html( implode( ', ', $sources ) ) . '</span>';
+		/* translators: 1: post type and status, e.g. "Page, Draft", 2: how the post uses the image, e.g. "attached, content". */
+		$meta = sprintf( __( '(%1$s) - %2$s', 'custom-thumbnail-generator' ), implode( wp_get_list_item_separator(), $details ), implode( wp_get_list_item_separator(), $sources ) );
+
+		return $name . ' <span class="ctgen-usage-meta">' . esc_html( $meta ) . '</span>';
 	}
 
 	/**
@@ -541,7 +555,8 @@ class CTGEN_Attachment_Summary {
 		$errors = array();
 		foreach ( $result['sizes'] as $size => $outcome ) {
 			if ( 'failed' === $outcome['outcome'] ) {
-				$errors[] = $size . ': ' . $outcome['message'];
+				/* translators: 1: image size name, 2: message. */
+				$errors[] = sprintf( __( '%1$s: %2$s', 'custom-thumbnail-generator' ), $size, $outcome['message'] );
 			}
 		}
 
@@ -687,9 +702,11 @@ class CTGEN_Attachment_Summary {
 				$webp_bytes   += $size;
 				$source_bytes += (int) filesize( $path );
 				++$copies;
-				$items .= '<li>' . esc_html( wp_basename( $webp ) . ' - ' . size_format( $size, 1 ) ) . '</li>';
+				/* translators: 1: file name, 2: file size or status, e.g. "photo.jpg - 120 KB". */
+				$items .= '<li>' . esc_html( sprintf( __( '%1$s - %2$s', 'custom-thumbnail-generator' ), wp_basename( $webp ), size_format( $size, 1 ) ) ) . '</li>';
 			} else {
-				$items .= '<li>' . esc_html( wp_basename( $webp ) . ' - ' . __( 'not created yet', 'custom-thumbnail-generator' ) ) . '</li>';
+				/* translators: 1: file name, 2: file size or status, e.g. "photo.jpg - 120 KB". */
+				$items .= '<li>' . esc_html( sprintf( __( '%1$s - %2$s', 'custom-thumbnail-generator' ), wp_basename( $webp ), __( 'not created yet', 'custom-thumbnail-generator' ) ) ) . '</li>';
 			}
 		}
 
@@ -767,7 +784,8 @@ class CTGEN_Attachment_Summary {
 				$name = (string) $size;
 			}
 
-			$items .= '<li>' . esc_html( $name . ': ' . ( isset( $reasons[ $reason ] ) ? $reasons[ $reason ] : (string) $reason ) ) . '</li>';
+			/* translators: 1: image size name, 2: message. */
+			$items .= '<li>' . esc_html( sprintf( __( '%1$s: %2$s', 'custom-thumbnail-generator' ), $name, isset( $reasons[ $reason ] ) ? $reasons[ $reason ] : (string) $reason ) ) . '</li>';
 		}
 
 		/* translators: %s: number of sizes. */

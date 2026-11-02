@@ -110,8 +110,8 @@ Printed notices during the run: only `getimagesize(): Read error!` / `exif_image
 - PHP 7.0 syntax: grep for 7.1+ constructs in all runtime files: none; every shipped PHP file passes `php -l` (PHP 7.4).
 
 ### Files
-- Created (shipped): `webp/class-ctgen-webp-replacer.php`, `webp/class-ctgen-webp-health-check.php`.
-- Changed (backups): `includes/init.php` (`.bak8`), `custom-thumbnail-generator.php` (`.bak8`), `webp/class-ctgen-webp-ajax-handlers.php` (`.bak9` = pre-R2; `.bak8` = pre-R1), `webp/class-ctgen-webp-manifest.php` (created in R1, no backup needed).
+- Created (shipped): `includes/webp/class-ctgen-webp-replacer.php`, `includes/webp/class-ctgen-webp-health-check.php`.
+- Changed (backups): `includes/init.php` (`.bak8`), `custom-thumbnail-generator.php` (`.bak8`), `includes/webp/class-ctgen-webp-ajax-handlers.php` (`.bak9` = pre-R2; `.bak8` = pre-R1), `includes/webp/class-ctgen-webp-manifest.php` (created in R1, no backup needed).
 - Dev tooling: new `tests/trait-ctgen-webp-serve-fixtures.php`, `tests/test-class-ctgen-webp-replacer.php`, `tests/test-class-ctgen-webp-health-check.php`, `tests/test-ctgen-webp-wiring.php`; `bootstrap.php` (`.bak` from R1) requires the new classes and trait.
 
 ### Decisions made

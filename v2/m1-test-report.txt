@@ -11,12 +11,12 @@ Complete. All 23 items pass on the final code.
 
 2. USER DECISION APPLIED: GIF EXCLUDED
 --------------------------------------
-- webp/class-ctgen-webp-converter.php: ALLOWED_SOURCE_MIME_TYPES is now
+- includes/webp/class-ctgen-webp-converter.php: ALLOWED_SOURCE_MIME_TYPES is now
   JPEG + PNG. Any GIF (static or animated) is rejected before an editor
   loads it, with its own code: ctgen_webp_gif_excluded.
 - The animated-GIF detection code (Imagick frame count + byte scan) was
   removed as dead code.
-- webp/class-ctgen-webp-ajax-handlers.php: GIF attachments are no longer
+- includes/webp/class-ctgen-webp-ajax-handlers.php: GIF attachments are no longer
   returned as eligible; the convert endpoint refuses a GIF attachment as a
   whole (ctgen_webp_gif_excluded) and any other non-JPEG/PNG image
   (ctgen_webp_unsupported_attachment_type).
@@ -25,8 +25,8 @@ Complete. All 23 items pass on the final code.
   "WebP conversion: Animated GIFs are not convertible to WebP without losing
    their animation, so GIF images are not converted. JPEG and PNG thumbnails
    are converted."
-- Backups: webp/class-ctgen-webp-converter.php.bak,
-  webp/class-ctgen-webp-ajax-handlers.php.bak (both = git HEAD).
+- Backups: includes/webp/class-ctgen-webp-converter.php.bak,
+  includes/webp/class-ctgen-webp-ajax-handlers.php.bak (both = git HEAD).
 
 
 3. RESULTS

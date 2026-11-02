@@ -24,7 +24,7 @@ Option 2 of three: an admin setting (not forced, not absent) that creates WebP c
 
 ## Files
 - New (shipped):
-  - `webp/class-ctgen-webp-auto-convert.php`
+  - `includes/webp/class-ctgen-webp-auto-convert.php`
   - `assets/css/ctgen-switch.css` (switch styles moved here from the summary CSS, now shared by both pages)
 - Changed (backups `*.bak11`):
   - `includes/init.php`: require, accessor `ctgen_webp_auto_convert()`, `register()`, enqueue `ctgen-switch-css`

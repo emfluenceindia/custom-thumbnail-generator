@@ -73,10 +73,10 @@ class CTGEN_Functions {
 
 							<tr>
 								<td class="ctg-title-cell"><?php echo esc_html( $slug ); ?> </td>
-								<td class="ctg-text-center"><?php echo esc_html( $size['width'] ); ?>px</td>
-								<td class="ctg-text-center"><?php echo esc_html( $size['height'] ); ?>px</td>
+								<td class="ctg-text-center"><?php echo esc_html( self::ctgen_pixels( $size['width'] ) ); ?></td>
+								<td class="ctg-text-center"><?php echo esc_html( self::ctgen_pixels( $size['height'] ) ); ?></td>
 								<td class="ctg-text-center"><?php echo wp_kses_post( $this->ctgen_get_size_table_title( $slug ) ); ?></td>
-								<td class="ctg-text-center"><?php echo $size['crop'] ? '<span class="yes">✔</span>' : '<span class="no">✖</span>'; ?></td>
+								<td class="ctg-text-center"><?php echo self::ctgen_crop_mark( $size['crop'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in ctgen_crop_mark(). ?></td>
 								<td class="ctg-text-center"><?php self::ctgen_render_webp_convert_button( $slug ); ?></td>
 							</tr>
 							<?php
@@ -131,6 +131,30 @@ class CTGEN_Functions {
 		?>
 		<button type="button" class="button ctgen-webp-convert-size" data-slug="<?php echo esc_attr( $slug ); ?>" aria-label="<?php echo esc_attr( $label ); ?>" title="<?php echo esc_attr( $label ); ?>"><?php esc_html_e( 'WebP', 'custom-thumbnail-generator' ); ?></button>
 		<?php
+	}
+
+	/**
+	 * A width or height for the size tables, e.g. "300px" (unescaped).
+	 *
+	 * @param int|string $pixels Number of pixels.
+	 * @return string
+	 */
+	public static function ctgen_pixels( $pixels ) {
+		/* translators: %s: number of pixels, e.g. "300" in "300px". */
+		return sprintf( _x( '%spx', 'image size in pixels', 'custom-thumbnail-generator' ), $pixels );
+	}
+
+	/**
+	 * The crop column's mark (escaped): a check or a cross, with "Yes" or
+	 * "No" for screen readers and translators.
+	 *
+	 * @param mixed $crop Whether the size is cropped.
+	 * @return string
+	 */
+	public static function ctgen_crop_mark( $crop ) {
+		return $crop
+			? '<span class="yes" aria-hidden="true">✔</span><span class="screen-reader-text">' . esc_html_x( 'Yes', 'image size is cropped', 'custom-thumbnail-generator' ) . '</span>'
+			: '<span class="no" aria-hidden="true">✖</span><span class="screen-reader-text">' . esc_html_x( 'No', 'image size is cropped', 'custom-thumbnail-generator' ) . '</span>';
 	}
 
 	/**

@@ -65,7 +65,7 @@
 	<tr><th>Area</th><th>Files</th><th>Lines</th></tr>
 	<tr><td>Bootstrap, uninstall</td><td><code>custom-thumbnail-generator.php</code>, <code>uninstall.php</code></td><td>72</td></tr>
 	<tr><td>Settings page and legacy features</td><td><code>includes/init.php</code>, <code>includes/settings-page.php</code>, <code>includes/class-ctgen-functions.php</code>, <code>includes/class-ctgen-ajax-handlers.php</code>, <code>templates/ctgen-form-html.php</code>, <code>templates/ctgen-custom-thumb-list-html.php</code></td><td>983</td></tr>
-	<tr><td>WebP conversion</td><td><code>webp/class-ctgen-webp-converter.php</code>, <code>webp/class-ctgen-webp-ajax-handlers.php</code></td><td>986</td></tr>
+	<tr><td>WebP conversion</td><td><code>includes/webp/class-ctgen-webp-converter.php</code>, <code>includes/webp/class-ctgen-webp-ajax-handlers.php</code></td><td>986</td></tr>
 	<tr><td>Attachment Summary</td><td><code>includes/class-ctgen-usage-scanner.php</code>, <code>includes/class-ctgen-attachment-summary.php</code>, <code>includes/class-ctgen-attachment-summary-table.php</code></td><td>1,544</td></tr>
 	<tr><td>JavaScript</td><td><code>assets/js/ctgen-webp-convert.js</code>, <code>assets/js/ctgen-attachment-summary.js</code>, <code>assets/js/ctgen-media-actions.min.js</code> (shipped minified only; reviewed after un-minifying)</td><td>1,229</td></tr>
 	<tr><td>CSS</td><td><code>assets/css/*.css</code> (checked for external URLs: none, fonts are local)</td><td>373</td></tr>
@@ -105,7 +105,7 @@
 <div class="finding">
 	<div class="hd">S1 &middot; <span class="sev medium">MEDIUM</span> &middot; WebP copies of a deleted image stay on disk and publicly reachable</div>
 	<div class="bd"><dl>
-		<dt>Location</dt><dd><code>webp/class-ctgen-webp-ajax-handlers.php</code> (no <code>delete_attachment</code> handling existed)</dd>
+		<dt>Location</dt><dd><code>includes/webp/class-ctgen-webp-ajax-handlers.php</code> (no <code>delete_attachment</code> handling existed)</dd>
 		<dt>Issue</dt><dd>WebP copies are written next to the image (<code>photo.jpg</code> &rarr; <code>photo.webp</code>, <code>photo-150x150.webp</code>, ...). WordPress deletes only the files it knows about, so when an administrator permanently deleted an image, every WebP copy remained in the uploads folder.</dd>
 		<dt>Impact</dt><dd>An image deleted to take it off the site (personal data, a copyright complaint, a leaked picture) stays publicly downloadable at a predictable URL (same name, <code>.webp</code> extension). Also leaves orphaned files.</dd>
 		<dt>Evidence</dt><dd>Probe CR6 before the fix: <em>"7 WebP copies created; after Delete permanently: 7 left on disk and still publicly reachable"</em>.</dd>
@@ -152,7 +152,7 @@
 <div class="finding">
 	<div class="hd">S5 &middot; <span class="sev low">LOW</span> &middot; Temporary files of an interrupted conversion never cleaned up</div>
 	<div class="bd"><dl>
-		<dt>Location</dt><dd><code>webp/class-ctgen-webp-converter.php</code> line 245 (original)</dd>
+		<dt>Location</dt><dd><code>includes/webp/class-ctgen-webp-converter.php</code> line 245 (original)</dd>
 		<dt>Issue / impact</dt><dd>Each conversion writes <code>.ctgen-webp-tmp-&lt;random&gt;.webp</code> and renames it into place. If PHP stopped in between (time or memory limit), the temp file stayed in the public uploads folder for good.</dd>
 		<dt>Fix</dt><dd>Before writing, the converter removes this plugin's temp files older than one hour from that folder (once per folder per request). Newer temp files (a conversion may still be running) and any other file are never touched.</dd>
 		<dt>Verified</dt><dd>CR12: old plugin temp file removed; fresh plugin temp file kept; unrelated old dot-file kept.</dd>
@@ -334,8 +334,8 @@
 	<tr><td><code>includes/class-ctgen-functions.php</code></td><td>Guard; <code>esc_html()</code> for the source column; translated strings</td><td>S6, S7, W1</td></tr>
 	<tr><td><code>templates/ctgen-custom-thumb-list-html.php</code></td><td>Valid rows; <code>esc_html()</code>; reads validated sizes</td><td>S6, W2, W4</td></tr>
 	<tr><td><code>templates/ctgen-form-html.php</code></td><td><code>max</code>/<code>step</code> on inputs; <code>__DIR__</code> include</td><td>S3, W3</td></tr>
-	<tr><td><code>webp/class-ctgen-webp-ajax-handlers.php</code></td><td><code>delete_webp_copies()</code> on <code>delete_attachment</code></td><td>S1</td></tr>
-	<tr><td><code>webp/class-ctgen-webp-converter.php</code></td><td>Stale temp-file cleanup</td><td>S5</td></tr>
+	<tr><td><code>includes/webp/class-ctgen-webp-ajax-handlers.php</code></td><td><code>delete_webp_copies()</code> on <code>delete_attachment</code></td><td>S1</td></tr>
+	<tr><td><code>includes/webp/class-ctgen-webp-converter.php</code></td><td>Stale temp-file cleanup</td><td>S5</td></tr>
 	<tr><td><code>assets/js/ctgen-media-actions.js</code> (new), <code>.min.js</code> (rebuilt)</td><td>Readable source; text-only insertion; server messages; run never stalls; translatable</td><td>S2, S9, B2, B3, W1</td></tr>
 	<tr><td><code>readme.txt</code>, <code>languages/custom-thumbnail-generator.pot</code></td><td>WebP deletion documented; changelog; 21 new strings</td><td>-</td></tr>
 	<tr><td><code>v2/</code> (not shipped)</td><td><code>tests/cr-probe.php</code>, <code>tests/cr-browser.js</code> (new); <code>tests/m4-run-all.sh</code> runs them; <code>tests/m2-verify.php</code> calls the enqueue function as WordPress does; <code>tools/build-js.js</code> builds the third script; <code>deploy/svn-release.sh</code> checks the version constant</td><td>-</td></tr>

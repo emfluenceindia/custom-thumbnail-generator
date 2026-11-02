@@ -12,7 +12,7 @@
 	var i18n = CTGENMediaAction.i18n || {};
 
 	/**
-	 * Replaces %s / %1$s placeholders, like sprintf for strings.
+	 * Replaces %s / %1$s placeholders and %% (a literal %), like sprintf for strings.
 	 *
 	 * @param {string} text Translated text.
 	 * @return {string} Text with the arguments filled in.
@@ -21,8 +21,14 @@
 		var args = Array.prototype.slice.call( arguments, 1 );
 		var next = 0;
 
-		return String( text ).replace( /%(\d+\$)?s/g, function ( match, position ) {
-			var index = position ? parseInt( position, 10 ) - 1 : next++;
+		return String( text ).replace( /%(\d+\$)?s|%%/g, function ( match, position ) {
+			var index;
+
+			if ( '%%' === match ) {
+				return '%';
+			}
+
+			index = position ? parseInt( position, 10 ) - 1 : next++;
 			return undefined === args[ index ] ? '' : String( args[ index ] );
 		} );
 	}
@@ -187,7 +193,7 @@
 					if ( percent >= 50 ) {
 						$( '#ctgen-percentage-increment' ).css( 'color', '#ffffff' );
 					}
-					$( '#ctgen-percentage-increment' ).text( percent + '%' );
+					$( '#ctgen-percentage-increment' ).text( format( i18n.percent, percent ) );
 					$( '#ctgen-generator-status' ).text( format( i18n.processed, done, total ) );
 
 					if ( done < total ) {

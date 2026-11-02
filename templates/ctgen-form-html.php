@@ -23,13 +23,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<tr>
 						<th><?php esc_html_e( 'Width', 'custom-thumbnail-generator' ); ?>&nbsp;</th>
 						<td>
-							<input type="number" min="25" max="10000" step="1" name="ctgen-width" id="ctgen-width" required /> px
+							<input type="number" min="25" max="10000" step="1" name="ctgen-width" id="ctgen-width" required /> <?php echo esc_html_x( 'px', 'unit after the width and height fields: pixels', 'custom-thumbnail-generator' ); ?>
 						</td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Height', 'custom-thumbnail-generator' ); ?>&nbsp;</th>
 						<td>
-							<input type="number" min="25" max="10000" step="1" name="ctgen-height" id="ctgen-height" required /> px
+							<input type="number" min="25" max="10000" step="1" name="ctgen-height" id="ctgen-height" required /> <?php echo esc_html_x( 'px', 'unit after the width and height fields: pixels', 'custom-thumbnail-generator' ); ?>
 						</td>
 					</tr>
 					<tr>
@@ -57,7 +57,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<button id="ctgen-regenerate" class="button button-secondary">
 				<i class="fa fa-recycle" aria-hidden="true"></i>&nbsp; <?php esc_html_e( 'Regenerate Thumbnails', 'custom-thumbnail-generator' ); ?> 
 			</button>
-			<p><?php esc_html_e( 'For a specific thumbnail size, hit the associated recycle button ', 'custom-thumbnail-generator' ); ?> ( <i class="fa fa-recycle ctgen-regen-thumbs inline" aria-hidden="true"></i> )  <?php esc_html_e( ' in the table.', 'custom-thumbnail-generator' ); ?> &nbsp;<i class="fa fa-hand-o-right ctgen-arrow-pointer" aria-hidden="true"></i></p>
+			<p>
+				<?php
+				echo wp_kses(
+					sprintf(
+						/* translators: %s: the recycle icon shown on each size's Regenerate button. */
+						esc_html__( 'For a specific thumbnail size, hit the associated recycle button %s in the table.', 'custom-thumbnail-generator' ),
+						'( <i class="fa fa-recycle ctgen-regen-thumbs inline" aria-hidden="true"></i> )'
+					),
+					array(
+						'i' => array(
+							'class'       => true,
+							'aria-hidden' => true,
+						),
+					)
+				);
+				?>
+				&nbsp;<i class="fa fa-hand-o-right ctgen-arrow-pointer" aria-hidden="true"></i>
+			</p>
 			<div id="ctgen-progressbar">
 				<div id="ctgen-progress"></div>
 				<div id="ctgen-percentage-increment"></div>

@@ -29,9 +29,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<?php $ctgen_crop = $ctgen_size['crop'] ? 1 : 0; ?>
 					<tr class="ctgen-1m-0-false">
 						<td class="ctgen-title-cell"><?php echo esc_html( $ctgen_slug ); ?> </td>
-						<td class="ctgen-text-center"><?php echo esc_html( $ctgen_size['width'] ); ?>px</td>
-						<td class="ctgen-text-center"><?php echo esc_html( $ctgen_size['height'] ); ?>px</td>
-						<td class="ctgen-text-center"><?php echo $ctgen_size['crop'] ? '<span class="yes">✔</span>' : '<span class="no">✖</span>'; ?></td>
+						<td class="ctgen-text-center"><?php echo esc_html( CTGEN_Functions::ctgen_pixels( $ctgen_size['width'] ) ); ?></td>
+						<td class="ctgen-text-center"><?php echo esc_html( CTGEN_Functions::ctgen_pixels( $ctgen_size['height'] ) ); ?></td>
+						<td class="ctgen-text-center"><?php echo CTGEN_Functions::ctgen_crop_mark( $ctgen_size['crop'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in ctgen_crop_mark(). ?></td>
 						<td class="ctgen-text-center">
 							<button title="<?php esc_attr_e( 'Regenerate', 'custom-thumbnail-generator' ); ?>"
 								data-width="<?php echo esc_attr( $ctgen_size['width'] ); ?>"

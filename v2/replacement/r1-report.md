@@ -108,10 +108,10 @@ Printed notices during the run: only `getimagesize(): Read error!` / `exif_image
 - Uploads: md5 map of all 256 files under `wp-content/uploads` (excluding the fixture folders) identical before/after; both fixture folders removed.
 
 ### Files
-- Created (shipped): `webp/class-ctgen-webp-manifest.php`, `webp/class-ctgen-webp-url-mapper.php`. Not wired into `includes/init.php` yet (R2 wires everything, per §3.2/§4).
+- Created (shipped): `includes/webp/class-ctgen-webp-manifest.php`, `includes/webp/class-ctgen-webp-url-mapper.php`. Not wired into `includes/init.php` yet (R2 wires everything, per §3.2/§4).
 - Created (dev tooling, not shipped): `ctgen-webp-dev-tooling/tests/test-class-ctgen-webp-manifest.php`, `…/test-class-ctgen-webp-url-mapper.php`.
 - Changed (with backup):
-  - `webp/class-ctgen-webp-ajax-handlers.php` → backup `class-ctgen-webp-ajax-handlers.php.bak8` (a `.bak` from 2026-10-06 already existed and was not overwritten, per rule 6; it is too old to be a safe rollback, so a numbered backup matching `.distignore`'s `*.bak[0-9]*` was added). Changes: extracted `webp_problem()` (public) from `verify_existing_webp()`, which now delegates; `attachment_id_for_file()` and `has_name_conflict()` made public. Logic unchanged; existing handler tests unchanged in result.
+  - `includes/webp/class-ctgen-webp-ajax-handlers.php` → backup `class-ctgen-webp-ajax-handlers.php.bak8` (a `.bak` from 2026-10-06 already existed and was not overwritten, per rule 6; it is too old to be a safe rollback, so a numbered backup matching `.distignore`'s `*.bak[0-9]*` was added). Changes: extracted `webp_problem()` (public) from `verify_existing_webp()`, which now delegates; `attachment_id_for_file()` and `has_name_conflict()` made public. Logic unchanged; existing handler tests unchanged in result.
   - `ctgen-webp-dev-tooling/tests/bootstrap.php` → `bootstrap.php.bak`. Added two `require_once` lines.
 - Skill: `replacement-skill.md` — 3 small wording fixes approved before R1 (health check compares whole manifest; pointers to §10 A1; no existing nonce test pattern).
 

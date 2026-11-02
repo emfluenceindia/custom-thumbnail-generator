@@ -309,7 +309,12 @@ class CTGEN_Attachment_Summary_Table extends WP_List_Table {
 		}
 
 		$meta  = wp_get_attachment_metadata( $item->ID );
-		$about = ( $file ? wp_basename( $file ) : '' ) . ( is_array( $meta ) && ! empty( $meta['width'] ) ? ' - ' . (int) $meta['width'] . ' x ' . (int) $meta['height'] : '' );
+		$about = $file ? wp_basename( $file ) : '';
+
+		if ( is_array( $meta ) && ! empty( $meta['width'] ) ) {
+			/* translators: 1: file name, 2: width, 3: height (in pixels). */
+			$about = sprintf( __( '%1$s - %2$s x %3$s', 'custom-thumbnail-generator' ), $about, (int) $meta['width'], (int) $meta['height'] );
+		}
 
 		// Opens in the page's single image viewer (see assets/js); without JavaScript it opens the file.
 		$actions['view'] = sprintf(
@@ -375,9 +380,11 @@ class CTGEN_Attachment_Summary_Table extends WP_List_Table {
 				$bytes  = (int) filesize( $path );
 				$total += $bytes;
 				++$found;
-				$items .= '<li>' . esc_html( wp_basename( $path ) . ' - ' . size_format( $bytes, 1 ) ) . '</li>';
+				/* translators: 1: file name, 2: file size or status, e.g. "photo.jpg - 120 KB". */
+				$items .= '<li>' . esc_html( sprintf( __( '%1$s - %2$s', 'custom-thumbnail-generator' ), wp_basename( $path ), size_format( $bytes, 1 ) ) ) . '</li>';
 			} else {
-				$items .= '<li>' . esc_html( wp_basename( $path ) . ' - ' . __( 'not stored locally', 'custom-thumbnail-generator' ) ) . '</li>';
+				/* translators: 1: file name, 2: file size or status, e.g. "photo.jpg - 120 KB". */
+				$items .= '<li>' . esc_html( sprintf( __( '%1$s - %2$s', 'custom-thumbnail-generator' ), wp_basename( $path ), __( 'not stored locally', 'custom-thumbnail-generator' ) ) ) . '</li>';
 			}
 		}
 

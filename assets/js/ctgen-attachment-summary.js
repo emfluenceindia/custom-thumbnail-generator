@@ -193,7 +193,7 @@
 		}
 
 		ui.fill.css( 'width', pct + '%' );
-		ui.percent.text( run.total ? pct + '%' : '' ).toggleClass( 'ctgen-usage-percentage-light', pct >= 50 );
+		ui.percent.text( run.total ? format( i18n.percent, pct ) : '' ).toggleClass( 'ctgen-usage-percentage-light', pct >= 50 );
 		ui.bar.attr( 'aria-valuenow', pct );
 	}
 
@@ -493,7 +493,7 @@
 			if ( stopReason ) {
 				message = format( i18n.regenError, stopReason );
 			} else if ( job.failed ) {
-				message = format( i18n.regenSome, job.converted, job.failed ) + ' ' + job.errors.join( '; ' );
+				message = format( i18n.regenSome, job.converted, job.failed ) + ' ' + job.errors.join( i18n.errorJoin );
 			} else {
 				message = format( i18n.regenDone, job.converted );
 			}
@@ -540,11 +540,11 @@
 							job.converted++;
 						} else if ( 'failed' === data.outcome ) {
 							job.failed++;
-							job.errors.push( part.label + ': ' + data.message );
+							job.errors.push( format( i18n.sizeMessage, part.label, data.message ) );
 						}
 					} else {
 						job.failed++;
-						job.errors.push( part.label + ': ' + ( data && data.message ? data.message : i18n.malformed ) );
+						job.errors.push( format( i18n.sizeMessage, part.label, data && data.message ? data.message : i18n.malformed ) );
 					}
 
 					step( parts, index + 1 );
@@ -556,7 +556,7 @@
 					}
 
 					job.failed++;
-					job.errors.push( part.label + ': ' + failureReason( xhr, textStatus ) );
+					job.errors.push( format( i18n.sizeMessage, part.label, failureReason( xhr, textStatus ) ) );
 					job.consecutiveErrors++;
 
 					if ( job.consecutiveErrors >= MAX_CONSECUTIVE_REQUEST_ERRORS ) {

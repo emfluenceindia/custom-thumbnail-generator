@@ -16,12 +16,12 @@
 - "Regenerate WebP" now also refreshes the image's Serve WebP cell, so a switch that was disabled becomes usable straight away.
 
 ## Files
-- New (shipped): `webp/class-ctgen-webp-serve-all.php` (`CTGEN_Webp_Serve_All`: `start`, `is_on`, `count`, `run_batch`, `on_files_changed`, `ajax_serve_all` with steps `start` / `batch`).
+- New (shipped): `includes/webp/class-ctgen-webp-serve-all.php` (`CTGEN_Webp_Serve_All`: `start`, `is_on`, `count`, `run_batch`, `on_files_changed`, `ajax_serve_all` with steps `start` / `batch`).
 - Changed (backups `*.bak10` = the approved toggle state):
   - `includes/init.php`: require + `ctgen_webp_serve_all()` accessor + `register()`.
   - `includes/class-ctgen-attachment-summary-table.php`: `serve` column (header = switch), `column_serve()`.
   - `includes/class-ctgen-attachment-summary.php`: `render_serve_all_header()`, `render_serve_cell()`; switch removed from `render_webp_cell()`; per-image label now screen-reader text naming the image; `serve_html` in both regenerate responses; status line above the table; 8 new strings.
-  - `webp/class-ctgen-webp-serve-ajax.php`: response `html` is now the Serve WebP cell.
+  - `includes/webp/class-ctgen-webp-serve-ajax.php`: response `html` is now the Serve WebP cell.
   - `assets/js/ctgen-attachment-summary.js` (+ rebuilt `.min.js`): `serveAll()`, `replaceServeCell()`, lock/unlock, regenerate refreshes the serve cell.
   - `assets/css/ctgen-attachment-summary.css`: switch styles moved to a shared `.ctgen-switch` class; column widths (16/8/20/15/27/14); header layout.
 - Tests (dev tooling, not shipped): new `test-class-ctgen-webp-serve-all.php` (11 tests); `test-class-ctgen-webp-serve-ajax.php` (cell tests point at the new cell, +3 tests); `test-ctgen-webp-wiring.php` (+2); `bootstrap.php` (require). Backups `*.bak10`.

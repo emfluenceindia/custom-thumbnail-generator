@@ -172,7 +172,7 @@ temporary users 0, fixture files 0.
 
 6. RE-RUN ON 2026-10-23 (after the Attachment Summary work)
 -----------------------------------------------------------
-Why: the converter (webp/class-ctgen-webp-ajax-handlers.php) was refactored
+Why: the converter (includes/webp/class-ctgen-webp-ajax-handlers.php) was refactored
 for per-file "Regenerate WebP" progress, and includes/init.php now loads the
 Attachment Summary page. The evidence above predated both changes.
 
