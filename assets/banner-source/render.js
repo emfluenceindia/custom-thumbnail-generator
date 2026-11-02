@@ -1,10 +1,13 @@
 // Renders banner.html to the WordPress.org banner sizes (1544x500 and 772x250).
+// Dev only (excluded from releases by .distignore). From the plugin root:
+//   node assets/banner-source/render.js v2/tools/node_modules/playwright-core assets/images
 const path = require( 'path' );
-const { chromium } = require( process.argv[ 2 ] );
+// Both arguments are relative to the current directory, not to this file.
+const { chromium } = require( path.resolve( process.argv[ 2 ] ) );
 
 ( async () => {
 	const browser = await chromium.launch();
-	const out = process.argv[ 3 ];
+	const out = path.resolve( process.argv[ 3 ] );
 	const url = 'file://' + path.join( __dirname, 'banner.html' );
 
 	for ( const scale of [ 1, 0.5 ] ) {

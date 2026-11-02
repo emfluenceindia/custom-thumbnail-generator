@@ -29,6 +29,7 @@
 /package-lock.json
 /gulpfile.js
 /assets/raw
+/assets/banner-source
 
 # GitHub-only readme (WordPress.org uses readme.txt)
 /README.md
