@@ -167,9 +167,26 @@ class CTGEN_Webp_Replacer {
 	}
 
 	/**
-	 * Filter callback for 'wp_content_img_tag': rewrites the src and srcset
-	 * attributes of an <img> in post content, leaving every other byte of
-	 * the tag as it was.
+	 * Attributes of a content <img> holding one image URL: src, plus the
+	 * copies that lightboxes and lazy loaders read (Kadence galleries,
+	 * Jetpack, common lazy-load scripts).
+	 *
+	 * @var string[]
+	 */
+	const URL_ATTRIBUTES = array( 'src', 'data-full-image', 'data-light-image', 'data-src', 'data-lazy-src', 'data-orig-file', 'data-medium-file', 'data-large-file' );
+
+	/**
+	 * Attributes of a content <img> holding a srcset value.
+	 *
+	 * @var string[]
+	 */
+	const SRCSET_ATTRIBUTES = array( 'srcset', 'data-srcset', 'data-lazy-srcset' );
+
+	/**
+	 * Filter callback for 'wp_content_img_tag': rewrites the image URLs of
+	 * an <img> in post content (src, srcset and the lightbox and lazy-load
+	 * copies of them), leaving every other byte of the tag as it was. Only
+	 * URLs of this attachment's served sizes change.
 	 *
 	 * @param string $html          The <img> tag.
 	 * @param string $context       Filter context (unused).
@@ -190,23 +207,36 @@ class CTGEN_Webp_Replacer {
 			return $html;
 		}
 
-		$src = $tag->get_attribute( 'src' );
+		/**
+		 * Filters the <img> attributes in post content that hold one image
+		 * URL and are switched to WebP. Add the attribute a lightbox or lazy
+		 * loader reads its image from.
+		 *
+		 * @param string[] $attributes Attribute names. Default: src and common lightbox and lazy-load attributes.
+		 */
+		$url_attributes = (array) apply_filters( 'ctgen_webp_img_url_attributes', self::URL_ATTRIBUTES );
 
-		if ( is_string( $src ) ) {
-			$mapped = $this->mapper->map( $src, $manifest, $folder_url );
+		foreach ( $url_attributes as $name ) {
+			$value = is_string( $name ) ? $tag->get_attribute( $name ) : null;
 
-			if ( $mapped !== $src ) {
-				$tag->set_attribute( 'src', $mapped );
+			if ( is_string( $value ) ) {
+				$mapped = $this->mapper->map( $value, $manifest, $folder_url );
+
+				if ( $mapped !== $value ) {
+					$tag->set_attribute( $name, $mapped );
+				}
 			}
 		}
 
-		$srcset = $tag->get_attribute( 'srcset' );
+		foreach ( self::SRCSET_ATTRIBUTES as $name ) {
+			$value = $tag->get_attribute( $name );
 
-		if ( is_string( $srcset ) ) {
-			$mapped = $this->map_srcset( $srcset, $manifest, $folder_url );
+			if ( is_string( $value ) ) {
+				$mapped = $this->map_srcset( $value, $manifest, $folder_url );
 
-			if ( $mapped !== $srcset ) {
-				$tag->set_attribute( 'srcset', $mapped );
+				if ( $mapped !== $value ) {
+					$tag->set_attribute( $name, $mapped );
+				}
 			}
 		}
 

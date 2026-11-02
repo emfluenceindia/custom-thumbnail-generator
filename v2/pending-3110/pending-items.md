@@ -28,21 +28,21 @@ Severity: **High** = can mislead users or leave data behind on a live site. **Me
 
 | # | Item | Type | Severity | Impact if left undone |
 |---|---|---|---|---|
-| B1 | Browser test of the "Serve WebP" column | Manual test | **High** | The new switches' JavaScript has no automated tests. Your browser activity at 11:54–12:02 suggests you started; please confirm the result |
-| B2 | Browser test of the automatic WebP setting | Manual test | Medium | Saving through the Settings form and the card's look are not yet confirmed in a browser |
+| ~~B1~~ | ~~Browser test of the "Serve WebP" column~~ **Passed 2 Nov** (single + bulk, no errors) | Manual test | Done | The new switches' JavaScript has no automated tests. Your browser activity at 11:54–12:02 suggests you started; please confirm the result |
+| ~~B2~~ | ~~Browser test of the automatic WebP setting~~ **Passed 2 Nov** (no errors) | Manual test | Done | Saving through the Settings form and the card's look are not yet confirmed in a browser |
 | D1 | WebP served without a Content-Type | Decision | Medium | Decides how R4 behaves on servers like this one |
 | D2 | Fix MIME type on this dev server | Decision | Low | Dev only. Browsers show the images anyway |
 | ~~D3~~ | ~~"Serve WebP for all ready images"~~ | Decision | Settled | Built as the header switch (section 3) |
-| M1 | Block editor load/save check | Manual test | Medium | Not yet proven that saving a post never stores `.webp` URLs. More pressing now that many images can be switched on at once |
-| P1 | Uninstall cleanup | R3 build | **High** | Deleting the plugin leaves serving data, the "serve all" and automatic WebP settings, and any pending conversions behind |
-| P2 | readme is out of date | R3 build | **High** | The readme says the plugin never changes the displayed image, and doesn't mention the switches or automatic WebP |
+| ~~M1~~ | ~~Block editor load/save check~~ **Passed 2 Nov** (post 4239 saved with #4243 serving: content keeps `.jpg`/`.png`, front end shows `.webp`). Found: the gallery block's lightbox attributes `data-full-image` / `data-light-image` still point to the original `R5.jpg`, so the enlarged view loads the JPEG. **Fixed 2 Nov:** the content `<img>` filter now also maps lightbox/lazy-load attributes (filter `ctgen_webp_img_url_attributes`, 3 tests); post 4239 now shows only WebP for R5 | Manual test | Done | Not yet proven that saving a post never stores `.webp` URLs. More pressing now that many images can be switched on at once |
+| ~~P1~~ | ~~Uninstall cleanup~~ **Done 2 Nov** (`includes/class-ctgen-uninstall.php`, 4 tests) | R3 build | Done | Deleting the plugin leaves serving data, the "serve all" and automatic WebP settings, and any pending conversions behind |
+| ~~P2~~ | ~~readme is out of date~~ **Done 2 Nov** (rewritten for 1.1 + WordPress.org search) | R3 build | Done | The readme says the plugin never changes the displayed image, and doesn't mention the switches or automatic WebP |
 | P3 | Bulk actions for *selected* rows | R3 build | Low (was Medium) | Optional now: the header switch covers the whole library, and single images have their own switch |
 | P4 | "Regenerate this size" | R3 build | Medium | A broken or missing WebP size stays on the original until "Regenerate WebP" or a full re-conversion |
 | P5 | Remaining R3 tests (40, 62, 63, 65; 43–46 only if P3 is built) | R3 build | Medium | P1, P2 and P4 would ship untested |
 | P6 | R4: "Serving on N of M places" + reachability check | R4 build | Medium | No way to see where originals still appear, and a blocked WebP URL isn't caught |
 | H1 | `.bak` files and no git | Housekeeping | Low | Clutter only. They never ship |
 | H2 | Coverage can't be measured | Environment | Low | No xdebug/pcov in the container |
-| H3 | Only tested on PHP 7.4 | Environment | Low | The plugin claims PHP 7.0+ |
+| H3 | Only tested on PHP 7.4 (2 Nov: all files pass `php -l` on 8.3; tests still run on 7.4) | Environment | Low | The plugin claims PHP 7.0+ |
 
 ## 3. Just built: the "Serve WebP" column
 

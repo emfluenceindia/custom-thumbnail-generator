@@ -777,8 +777,9 @@ class CTGEN_Attachment_Summary {
 	}
 
 	/**
-	 * HTML of the "Serve WebP" column header (escaped): the column name and
-	 * the switch for all images, on or off as stored.
+	 * HTML of the "Serve WebP" column header (escaped): the switch for all
+	 * images, on or off as stored, with the column name drawn inside its
+	 * track. The name follows the input so CSS can recolour it when checked.
 	 *
 	 * @return string
 	 */
@@ -786,8 +787,8 @@ class CTGEN_Attachment_Summary {
 		$state = ctgen_webp_serve_all()->is_on() ? ' checked="checked"' : '';
 
 		return '<span class="ctgen-webp-serve-all">'
-			. '<span class="ctgen-webp-serve-all-label">' . esc_html__( 'Serve WebP', 'custom-thumbnail-generator' ) . '</span>'
 			. '<input type="checkbox" role="switch" class="ctgen-switch ctgen-webp-serve-all-toggle" aria-label="' . esc_attr__( 'Serve WebP for all images', 'custom-thumbnail-generator' ) . '"' . $state . ' />'
+			. '<span class="ctgen-webp-serve-all-label" aria-hidden="true">' . esc_html__( 'Serve WebP', 'custom-thumbnail-generator' ) . '</span>'
 			. '</span>';
 	}
 

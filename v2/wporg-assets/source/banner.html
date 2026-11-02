@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1544px; height: 500px; overflow: hidden; }
+  body {
+    font-family: "Ubuntu Sans", "Ubuntu", sans-serif;
+    background: radial-gradient(circle at 78% 30%, #1f5a1a 0%, #123815 45%, #0b2410 100%);
+    color: #fff;
+    position: relative;
+  }
+  .grid {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .left { position: absolute; left: 96px; top: 92px; width: 700px; }
+  .kicker {
+    display: inline-block; padding: 8px 18px; border-radius: 999px;
+    background: rgba(85,206,12,.16); color: #8ff05a; font-weight: 700;
+    font-size: 22px; letter-spacing: .06em; text-transform: uppercase;
+  }
+  h1 { margin-top: 26px; font-size: 76px; line-height: 1.02; font-weight: 800; letter-spacing: -.02em; }
+  h1 span { color: #55ce0c; }
+  .pills { margin-top: 34px; display: flex; gap: 14px; }
+  .pill {
+    font-size: 26px; font-weight: 600; padding: 12px 22px; border-radius: 14px;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+  }
+  .pill b { color: #55ce0c; margin-right: 8px; }
+
+  .card {
+    position: absolute; right: 96px; top: 70px; width: 600px;
+    background: #fff; color: #1d2327; border-radius: 22px;
+    box-shadow: 0 30px 70px rgba(0,0,0,.45);
+    padding: 28px 30px; transform: rotate(-1.5deg);
+  }
+  .row { display: flex; align-items: center; gap: 22px; }
+  .thumb {
+    width: 112px; height: 112px; border-radius: 14px; flex: none;
+    background: linear-gradient(160deg, #ffd27a 0%, #f59e42 45%, #2f6d3a 46%, #1f4d2a 100%);
+    position: relative; overflow: hidden;
+  }
+  .thumb::after { content: ""; position: absolute; width: 34px; height: 34px; border-radius: 50%; background: #fff6d6; top: 16px; right: 18px; }
+  .title { font-size: 30px; font-weight: 700; }
+  .meta { font-size: 21px; color: #646970; margin-top: 4px; }
+  .used { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; font-size: 21px; font-weight: 600; color: #135e96; }
+  .used i { width: 12px; height: 12px; border-radius: 50%; background: #2271b1; display: inline-block; }
+  hr { border: 0; border-top: 1px solid #e2e4e7; margin: 24px 0 20px; }
+  .label { font-size: 19px; color: #646970; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .sizes { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; }
+  .sizes .from { font-size: 28px; color: #8c8f94; text-decoration: line-through; }
+  .sizes .to { font-size: 40px; font-weight: 800; color: #1d2327; }
+  .sizes .save { font-size: 26px; font-weight: 800; color: #008a20; background: #e6f6ea; padding: 6px 14px; border-radius: 10px; }
+  .bar { height: 14px; border-radius: 7px; background: #e2e4e7; margin-top: 14px; overflow: hidden; }
+  .bar div { width: 38%; height: 100%; background: #55ce0c; border-radius: 7px; }
+  .serve { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; }
+  .serve span { font-size: 24px; font-weight: 700; }
+  .switch {
+    width: 196px; height: 46px; border-radius: 23px; background: #00a32a; position: relative;
+    color: #fff; font-weight: 700; font-size: 19px; display: flex; align-items: center; padding-left: 18px;
+  }
+  .switch::after { content: ""; position: absolute; right: 5px; top: 5px; width: 36px; height: 36px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="left">
+    <div class="kicker">Free · No API keys · No quotas</div>
+    <h1>Custom Thumbnail<br><span>Generator</span></h1>
+    <div class="pills">
+      <div class="pill"><b>✓</b>Image sizes</div>
+      <div class="pill"><b>✓</b>WebP</div>
+      <div class="pill"><b>✓</b>Media usage</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="thumb"></div>
+      <div>
+        <div class="title">mountain-sunrise.jpg</div>
+        <div class="meta">2400 × 1600 · 9 sizes</div>
+        <div class="used"><i></i>Used in 3 places</div>
+      </div>
+    </div>
+    <hr>
+    <div class="label">All files</div>
+    <div class="sizes">
+      <span class="from">1.84 MB</span>
+      <span class="to">702 KB</span>
+      <span class="save">−62%</span>
+    </div>
+    <div class="bar"><div></div></div>
+    <div class="serve">
+      <span>Serving WebP to visitors</span>
+      <div class="switch">Serve WebP</div>
+    </div>
+  </div>
+</body>
+</html>

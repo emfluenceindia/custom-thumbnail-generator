@@ -320,7 +320,7 @@ class CTGEN_Attachment_Summary_Table extends WP_List_Table {
 			esc_html__( 'View', 'custom-thumbnail-generator' )
 		);
 
-		return '<div class="ctgen-image-cell"><span class="ctgen-image-preview">' . $preview . '</span><span class="ctgen-image-name"><strong>' . $name . '</strong><span class="ctgen-file-name">' . esc_html( $file ? wp_basename( $file ) : '' ) . '</span></span></div>' . $this->row_actions( $actions );
+		return '<div class="ctgen-image-cell"><span class="ctgen-image-preview">' . $preview . '</span><span class="ctgen-image-name"><strong>' . $name . '</strong></span></div>' . $this->row_actions( $actions );
 	}
 
 	/**

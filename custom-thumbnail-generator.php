@@ -1,11 +1,12 @@
 <?php
 /**
- * Plugin Name: Custom Thumbnail Generator
+ * Plugin Name: Custom Thumbnail Generator – Image Sizes, WebP & Media Usage
  * Plugin URI: https://github.com/emfluenceindia/Custom-Thumbnail-Generator
- * Description: Create theme-independent custom thumbnail sizes with Regenerate feature.
+ * Description: Create image sizes that survive theme changes, convert and serve WebP, and see where every image in your Media Library is used.
  * Version: 1.1
  * Author: Subrata Sarkar
  * Author URI: https://profiles.wordpress.org/subrataemfluence
+ * Requires at least: 6.5
  * Requires PHP: 7.0
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html

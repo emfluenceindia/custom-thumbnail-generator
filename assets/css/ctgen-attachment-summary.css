@@ -91,7 +91,6 @@
 	display: block;
 }
 
-.ctgen-file-name,
 .ctgen-usage-meta,
 .ctgen-usage-when {
 	color: #646970;
@@ -311,10 +310,62 @@ body.ctgen-image-viewer-open {
 	gap: 0 8px;
 }
 
+/*
+ * Header switch with the column name inside the track: the input and the
+ * name share one grid cell, so the track grows to fit the (translated) name.
+ * The name sits opposite the knob and ignores clicks, which reach the input.
+ */
 .ctgen-webp-serve-all {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
+	display: inline-grid;
+	vertical-align: middle;
+}
+
+.ctgen-webp-serve-all > * {
+	grid-area: 1 / 1;
+}
+
+.ctgen-webp-serve-all .ctgen-switch[type="checkbox"] {
+	width: 100%;
+	min-width: 0;
+	height: 100%;
+}
+
+/* The knob moves by `left` here: the track width depends on the name. */
+.ctgen-webp-serve-all .ctgen-switch[type="checkbox"]::before {
+	transition: left 0.2s ease;
+}
+
+.ctgen-webp-serve-all .ctgen-switch[type="checkbox"]:checked::before {
+	left: calc(100% - 20px);
+	transform: none;
+}
+
+.ctgen-webp-serve-all-label {
+	position: relative;
+	padding: 0 8px 0 26px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 24px;
+	white-space: nowrap;
+	color: #1d2327;
+	pointer-events: none;
+	transition: color 0.2s ease;
+}
+
+.ctgen-webp-serve-all-toggle:checked + .ctgen-webp-serve-all-label {
+	padding: 0 26px 0 8px;
+	color: #fff;
+}
+
+.ctgen-webp-serve-all-toggle:disabled + .ctgen-webp-serve-all-label {
+	opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ctgen-webp-serve-all .ctgen-switch[type="checkbox"]::before,
+	.ctgen-webp-serve-all-label {
+		transition: none;
+	}
 }
 
 .ctgen-webp-serve-all-status {

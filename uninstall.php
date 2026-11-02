@@ -1,6 +1,8 @@
 <?php
 /**
- * Removes data stored by the Attachment Summary usage scan when the plugin is deleted.
+ * Removes the plugin's data when it is deleted from the Plugins screen:
+ * usage scan results, WebP serving data, the WebP settings and scheduled
+ * events, on every site of a network. See CTGEN_Uninstall.
  *
  * Custom thumbnail sizes (option ctgen_custom_image_sizes), image files and
  * WebP copies are deliberately left untouched.
@@ -12,6 +14,6 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-delete_post_meta_by_key( '_ctgen_usage' );
-delete_post_meta_by_key( '_ctgen_usage_count' );
-delete_metadata( 'user', 0, 'ctgen_attachment_summary_per_page', '', true );
+require_once __DIR__ . '/includes/class-ctgen-uninstall.php';
+
+CTGEN_Uninstall::run();
