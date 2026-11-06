@@ -171,7 +171,8 @@ Scheduled events: `ctgen_webp_health_check` (daily) and `ctgen_webp_auto_convert
 * New: Create WebP copies of existing JPEG and PNG images, including the full-size image, the scaled and original versions of large uploads, and every thumbnail, or of a single thumbnail size or a single image.
 * New: live progress bars with converted, already converted, skipped and failed counts, and a list of failures.
 * New: hooks for developers (see the FAQ).
-* The plugin now has its own admin menu: **Custom Thumbnail Generator > Settings** (previously **Settings > Custom Thumbnail Generator**).
+* New: the plugin has its own **Custom Thumbnail Generator** menu in the dashboard sidebar, with **Settings** and **Attachment Summary** pages.
+* Changed: the settings page is no longer under the **Settings** menu. It has moved from **Settings > Custom Thumbnail Generator** to **Custom Thumbnail Generator > Settings**.
 * Each conversion request has a 2-minute time limit, so a server that stops answering cannot stall a run.
 * GIF images are excluded from WebP conversion so that animated GIFs never lose their animation.
 * Deleting the plugin now removes all of its settings and stored data, on every site of a network.
@@ -197,4 +198,4 @@ Scheduled events: `ctgen_webp_health_check` (daily) and `ctgen_webp_auto_convert
 == Upgrade Notice ==
 
 = 1.1 =
-Adds WebP conversion and serving, automatic WebP for new uploads, and a page showing where every image is used. Original images are never changed, and WebP serving is off until you turn it on.
+Adds WebP conversion and serving, automatic WebP for new uploads, and a page showing where every image is used. Original images are never changed, and WebP serving is off until you turn it on. The settings page has moved from the Settings menu to the new Custom Thumbnail Generator menu.
