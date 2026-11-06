@@ -1,0 +1,92 @@
+WebP or AVIF, which is more recommended these days? How if a WordPress plugin gives the option to convert files on upload to both formats and serve them? Is there any performance gain? Which one boosts performance more?
+For a modern WordPress website in 2026, my recommendation is:
+
+Serve AVIF first, WebP as fallback.
+
+If your plugin can automatically generate and serve both formats, enable both and let the browser choose the best one. That is currently considered the best-practice setup. turn1search3
+
+Quick comparison
+Factor	WebP	AVIF
+Fil size	Much smaller than JPEG	Typically 20-45% smaller than WebP at similar quality
+Image quality	Good	Usually better at the same file size
+Browser support	Excellent	Very good, but slightly behind WebP
+Encoding speed	Faster	Slower
+Decoding/display speed	Fast	Slightly more CPU-intensive
+HDR support	No	Yes
+Sources report AVIF commonly achieves around 20-30% smaller files than WebP, and sometimes even more depending on the image content. turn1search5
+
+Will there be a performance gain?
+Yes, but mostly from reduced image size.
+
+Th performance benefits are:
+
+Lower bandwidth usage
+Faster image downloads
+Better Core Web Vitals (especially LCP)
+Faster page rendering on slower mobile networks
+Reduced CDN and hosting bandwidth costs
+The biggest gains occur when:
+
+Your pages contain many images
+Images are high resolution
+Visitors use mobile data connections
+Which boosts performance more?
+AVIF generally wins.
+
+Example results from recent benchmarks:
+
+JPEG → WebP: often ~25-65% reduction
+WebP → AVIF: often an additional ~20-45% reduction turn1search6
+Suppose a JPEG is 300 KB:
+
+WebP might become ~110 KB
+AVIF might become ~70-90 KB
+Tat reduction directly decreases page weight.
+
+For WordPress specifically
+If using plugins such as:
+
+Converter for Media
+ShortPixel
+Imagify
+EWWW Image Optimizer
+LiteSpeed Cache
+Optimole
+and they offer:
+
+AVIF + WebP generation
+Automatic browser detection
+then enable:
+
+✅ Generate WebP
+✅ Generate AVIF
+✅ Serve AVIF when supported
+✅ Fall back to WebP
+✅ Keep original JPEG/PNG as ultimate fallback
+
+This gives the smallest images to modern browsers without breaking compatibility.
+
+Any downside?
+A few:
+
+More disk space on the server
+Original image
+WebP version
+AVIF version
+Longer processing during upload
+
+AVIF generation is slower than WebP.
+Slightly higher CPU usage while encoding
+
+Usually only noticeable on weak hosting plans.
+For most sites, these drawbacks are minor compared with the bandwidth savings.
+
+My recommendation for your WordPress site
+Since you already care about performance and hosting costs:
+
+Enable both WebP and AVIF generation. Use a plugin that serves:
+
+AVIF → WebP → Original image
+This will extract almost all available image-performance benefits today while maintaining compatibility with older browsers. AVIF will provide the largest performance boost, while WebP acts as the safety net. turn1search3
+
+If you tell me which plugin you're using (LiteSpeed Cache, ShortPixel, EWWW, Converter or Media, etc.), I can tell you the optimal settings for that specific plugin.
